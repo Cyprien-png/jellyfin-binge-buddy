@@ -545,13 +545,31 @@
                 });
             }
 
-            function saveConfiguration(onSuccess) {
-                return ApiClient.updatePluginConfiguration(BingeBuddyConfig.pluginUniqueId, BingeBuddyConfig.config)
+            function saveConfiguration(applyChanges, onSuccess) {
+                Dashboard.showLoadingMsg();
+
+                return ApiClient.getPluginConfiguration(BingeBuddyConfig.pluginUniqueId)
+                    .then(function (config) {
+                        config = normalizeConfig(config || {});
+
+                        if (typeof applyChanges === 'function') {
+                            applyChanges(config);
+                        }
+
+                        delete config.groups;
+                        BingeBuddyConfig.config = config;
+
+                        return ApiClient.updatePluginConfiguration(BingeBuddyConfig.pluginUniqueId, config);
+                    })
                     .then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
+
                         if (typeof onSuccess === 'function') {
                             onSuccess();
                         }
+                    })
+                    .catch(function () {
+                        Dashboard.hideLoadingMsg();
                     });
             }
 
@@ -614,23 +632,17 @@
                         return;
                     }
 
-                    Dashboard.showLoadingMsg();
-
                     var newGroup = {
                         Id: createGuid(),
                         Name: name,
                         MemberUserIds: []
                     };
 
-                    BingeBuddyConfig.config.Groups.push(newGroup);
-
-                    saveConfiguration(function () {
+                    saveConfiguration(function (config) {
+                        config.Groups.push(newGroup);
+                    }, function () {
                         nameInput.value = '';
                         renderGroupsGrid();
-                        Dashboard.hideLoadingMsg();
-                    }).catch(function () {
-                        BingeBuddyConfig.config.Groups.pop();
-                        Dashboard.hideLoadingMsg();
                     });
                 });
 
@@ -657,8 +669,7 @@
                         return false;
                     }
 
-                    Dashboard.showLoadingMsg();
-
+                    var groupId = group.Id;
                     var selectedUserIds = [];
                     document.querySelectorAll('#usersList input[type="checkbox"]').forEach(function (checkbox) {
                         if (checkbox.checked) {
@@ -666,14 +677,20 @@
                         }
                     });
 
-                    group.MemberUserIds = selectedUserIds;
+                    saveConfiguration(function (config) {
+                        var targetGroup = (config.Groups || []).find(function (item) {
+                            return normalizeGuid(item.Id) === normalizeGuid(groupId);
+                        });
 
-                    saveConfiguration(function () {
-                        updateDetailTitle(group);
+                        if (targetGroup) {
+                            targetGroup.MemberUserIds = selectedUserIds;
+                        }
+                    }, function () {
+                        var updatedGroup = getGroupById(groupId);
+                        if (updatedGroup) {
+                            updateDetailTitle(updatedGroup);
+                        }
                         renderGroupsGrid();
-                        Dashboard.hideLoadingMsg();
-                    }).catch(function () {
-                        Dashboard.hideLoadingMsg();
                     });
 
                     return false;
@@ -686,26 +703,27 @@
                         return;
                     }
 
+                    var groupIdToDelete = group.Id;
+                    var groupName = group.Name;
+
                     Dashboard.confirm(
-                        'Delete the group "' + group.Name + '"? This cannot be undone.',
+                        'Delete the group "' + groupName + '"? This cannot be undone.',
                         'Delete Group',
-                        false
-                    ).then(function () {
-                        Dashboard.showLoadingMsg();
+                        function (confirmed) {
+                            if (!confirmed) {
+                                return;
+                            }
 
-                        BingeBuddyConfig.config.Groups = getGroups().filter(function (item) {
-                            return normalizeGuid(item.Id) !== normalizeGuid(group.Id);
-                        });
-
-                        saveConfiguration(function () {
-                            showListView();
-                            renderGroupsGrid();
-                            Dashboard.hideLoadingMsg();
-                        }).catch(function () {
-                            Dashboard.hideLoadingMsg();
-                            loadPageData();
-                        });
-                    });
+                            saveConfiguration(function (config) {
+                                config.Groups = (config.Groups || []).filter(function (item) {
+                                    return normalizeGuid(item.Id) !== normalizeGuid(groupIdToDelete);
+                                });
+                            }, function () {
+                                showListView();
+                                renderGroupsGrid();
+                            });
+                        }
+                    );
                 });
         </script>
     </div>
