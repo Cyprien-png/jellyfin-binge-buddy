@@ -2,77 +2,711 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Template</title>
+    <title>Binge Buddy</title>
+    <style>
+        #BingeBuddyConfigPage {
+            --bb-accent: #00a4dc;
+            --bb-accent-soft: rgba(0, 164, 220, 0.15);
+            --bb-surface: rgba(0, 0, 0, 0.28);
+            --bb-surface-hover: rgba(0, 0, 0, 0.38);
+            --bb-border: rgba(255, 255, 255, 0.12);
+            --bb-border-strong: rgba(255, 255, 255, 0.22);
+            --bb-text-muted: rgba(255, 255, 255, 0.65);
+            --bb-radius: 0.5rem;
+            --bb-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+        }
+
+        .bb-page-intro {
+            margin-bottom: 1.75rem;
+            line-height: 1.5;
+            color: var(--bb-text-muted);
+        }
+
+        .bb-section {
+            margin-bottom: 2rem;
+            padding: 1.25rem 1.35rem 1.35rem;
+            border: 1px solid var(--bb-border);
+            border-radius: var(--bb-radius);
+            background: var(--bb-surface);
+            box-shadow: var(--bb-shadow);
+        }
+
+        .bb-section-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.85rem;
+            border-bottom: 2px solid var(--bb-accent);
+        }
+
+        .bb-section-header-compact {
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.65rem;
+        }
+
+        .bb-section-title {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .bb-section-subtitle {
+            margin: 0.35rem 0 0;
+            font-size: 0.92rem;
+            color: var(--bb-text-muted);
+            line-height: 1.45;
+        }
+
+        .bb-create-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .bb-create-row .inputContainer {
+            flex: 1 1 18rem;
+            margin-bottom: 0;
+        }
+
+        .bb-groups-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+            gap: 1rem;
+        }
+
+        .bb-group-card {
+            display: flex;
+            flex-direction: column;
+            min-height: 11rem;
+            padding: 0;
+            border: 1px solid var(--bb-border);
+            border-radius: var(--bb-radius);
+            background: rgba(255, 255, 255, 0.04);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+            overflow: hidden;
+            transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .bb-group-card:hover {
+            border-color: var(--bb-border-strong);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+        }
+
+        .bb-group-card-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            padding: 1rem 1rem 0.75rem;
+            flex: 1;
+        }
+
+        .bb-group-card-body {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .bb-group-card-name {
+            margin: 0 0 0.45rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .bb-group-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .bb-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--bb-border);
+            font-size: 0.82rem;
+            color: var(--bb-text-muted);
+        }
+
+        .bb-group-card-footer {
+            padding: 0.85rem 1rem 1rem;
+            border-top: 1px solid var(--bb-border);
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        .bb-group-card-footer button {
+            width: 100%;
+        }
+
+        .bb-empty-state {
+            padding: 2.25rem 1rem;
+            text-align: center;
+            border: 1px dashed var(--bb-border-strong);
+            border-radius: var(--bb-radius);
+            color: var(--bb-text-muted);
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        .bb-empty-state-title {
+            margin: 0 0 0.35rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: inherit;
+        }
+
+        .bb-detail-top {
+            margin-bottom: 1.5rem;
+        }
+
+        .bb-detail-top button {
+            margin-bottom: 0.85rem;
+        }
+
+        .bb-detail-page-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .bb-users-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        .bb-user-row.checkboxContainer {
+            margin: 0;
+            padding: 0.65rem 1rem;
+            border: 1px solid var(--bb-border);
+            border-radius: calc(var(--bb-radius) - 0.1rem);
+            background: rgba(0, 0, 0, 0.14);
+            transition: background 0.12s ease, border-color 0.12s ease;
+        }
+
+        .bb-user-row.checkboxContainer:hover {
+            background: rgba(0, 0, 0, 0.24);
+            border-color: var(--bb-border-strong);
+        }
+
+        .bb-user-row.checkboxContainer.is-selected {
+            border-color: rgba(0, 164, 220, 0.55);
+            background: var(--bb-accent-soft);
+        }
+
+        .bb-user-row .emby-checkbox-label {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .bb-user-row .emby-checkbox-label span {
+            font-size: 0.98rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .bb-actions-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1.25rem;
+            padding-top: 1.1rem;
+            border-top: 1px solid var(--bb-border);
+        }
+
+        .bb-actions-bar .bb-danger-zone {
+            margin-left: auto;
+        }
+
+        .bb-danger-button {
+            color: #ff8f8f !important;
+        }
+
+        #BingeBuddyConfigPage [data-bb-hidden="true"] {
+            display: none !important;
+        }
+
+        @media (max-width: 40rem) {
+            .bb-actions-bar .bb-danger-zone {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .bb-actions-bar .bb-danger-zone button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div id="TemplateConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+    <div id="BingeBuddyConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
         <div data-role="content">
             <div class="content-primary">
-                <form id="TemplateConfigForm">
-                    <div class="selectContainer">
-                        <label class="selectLabel" for="Options">Several Options</label>
-                        <select is="emby-select" id="Options" name="Options" class="emby-select-withcolor emby-select">
-                            <option id="optOneOption" value="OneOption">One Option</option>
-                            <option id="optAnotherOption" value="AnotherOption">Another Option</option>
-                        </select>
-                    </div>
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="AnInteger">An Integer</label>
-                        <input id="AnInteger" name="AnInteger" type="number" is="emby-input" min="0" />
-                        <div class="fieldDescription">A Description</div>
-                    </div>
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input id="TrueFalseSetting" name="TrueFalseCheckBox" type="checkbox" is="emby-checkbox" />
-                            <span>A Checkbox</span>
-                        </label>
-                    </div>
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="AString">A String</label>
-                        <input id="AString" name="AString" type="text" is="emby-input" />
-                        <div class="fieldDescription">Another Description</div>
-                    </div>
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                <p id="bbPageIntro" class="bb-page-intro">
+                    Organize binge-watching groups and choose which Jellyfin users belong to each one.
+                </p>
+
+                <div id="groupsListView" data-bb-hidden="false">
+                    <section class="bb-section" aria-labelledby="bbCreateSectionTitle">
+                        <div class="bb-section-header bb-section-header-compact">
+                            <div>
+                                <h2 id="bbCreateSectionTitle" class="bb-section-title">Create a group</h2>
+                                <p class="bb-section-subtitle">Give your group a name, then manage its members from the card below.</p>
+                            </div>
+                        </div>
+
+                        <div class="bb-create-row">
+                            <div class="inputContainer">
+                                <label class="inputLabel inputLabelUnfocused" for="newGroupName">Group name</label>
+                                <input id="newGroupName" name="newGroupName" type="text" is="emby-input" maxlength="100" placeholder="e.g. Friday Night Crew" />
+                            </div>
+                            <button is="emby-button" type="button" id="createGroupButton" class="raised button-submit emby-button">
+                                <span>Create group</span>
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="bb-section" aria-labelledby="bbGroupsSectionTitle">
+                        <div class="bb-section-header">
+                            <div>
+                                <h2 id="bbGroupsSectionTitle" class="bb-section-title">Your groups</h2>
+                            </div>
+                        </div>
+
+                        <div id="groupsGrid" class="bb-groups-grid"></div>
+
+                        <div id="groupsEmptyState" class="bb-empty-state" data-bb-hidden="true">
+                            <p class="bb-empty-state-title">No groups yet</p>
+                            <p>Create your first group in the section above.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <div id="groupDetailView" data-bb-hidden="true">
+                    <div class="bb-detail-top">
+                        <button is="emby-button" type="button" id="backToGroupsButton" class="raised emby-button">
+                            <span>← Back to groups</span>
                         </button>
+                        <h2 id="groupDetailTitle" class="bb-detail-page-title"></h2>
                     </div>
-                </form>
+
+                    <section class="bb-section" aria-labelledby="bbMembersSectionTitle">
+                        <div class="bb-section-header">
+                            <div>
+                                <h2 id="bbMembersSectionTitle" class="bb-section-title">Members</h2>
+                                <p class="bb-section-subtitle">Check the users who belong to this group. New server users appear here unchecked.</p>
+                            </div>
+                        </div>
+
+                        <form id="groupMembersForm">
+                            <div id="usersList" class="bb-users-list"></div>
+
+                            <div class="bb-actions-bar">
+                                <button is="emby-button" type="submit" class="raised button-submit emby-button">
+                                    <span>Save members</span>
+                                </button>
+                                <div class="bb-danger-zone">
+                                    <button is="emby-button" type="button" id="deleteGroupButton" class="raised emby-button bb-danger-button">
+                                        <span>Delete group</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </section>
+                </div>
             </div>
         </div>
+
         <script type="text/javascript">
-            var TemplateConfig = {
-                pluginUniqueId: 'eb5d7894-8eef-4b36-aa6f-5d124e828ce1'
+            var BingeBuddyConfig = {
+                pluginUniqueId: '03b66f74-f14e-4e5c-a123-b71f4da3d6d3',
+                config: null,
+                users: [],
+                selectedGroupId: null
             };
 
-            document.querySelector('#TemplateConfigPage')
-                .addEventListener('pageshow', function() {
+            function setBbVisible(element, visible) {
+                if (!element) {
+                    return;
+                }
+
+                element.hidden = !visible;
+                element.setAttribute('data-bb-hidden', visible ? 'false' : 'true');
+                element.style.display = visible ? '' : 'none';
+            }
+
+            function normalizeGroup(group) {
+                return {
+                    Id: group.Id || group.id,
+                    Name: group.Name || group.name || '',
+                    MemberUserIds: group.MemberUserIds || group.memberUserIds || []
+                };
+            }
+
+            function normalizeConfig(config) {
+                var rawGroups = config.Groups || config.groups || [];
+                config.Groups = rawGroups.map(normalizeGroup);
+                delete config.groups;
+                return config;
+            }
+
+            function getGroups() {
+                return (BingeBuddyConfig.config && BingeBuddyConfig.config.Groups) ? BingeBuddyConfig.config.Groups : [];
+            }
+
+            function normalizeGuid(value) {
+                return (value || '').toString().toLowerCase();
+            }
+
+            function createGuid() {
+                if (window.crypto && crypto.randomUUID) {
+                    return crypto.randomUUID();
+                }
+
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (character) {
+                    var random = Math.random() * 16 | 0;
+                    var value = character === 'x' ? random : ((random & 0x3) | 0x8);
+                    return value.toString(16);
+                });
+            }
+
+            function getGroupById(groupId) {
+                return getGroups().find(function (group) {
+                    return normalizeGuid(group.Id) === normalizeGuid(groupId);
+                });
+            }
+
+            function getMemberCount(group) {
+                return (group && group.MemberUserIds) ? group.MemberUserIds.length : 0;
+            }
+
+            function memberCountLabel(count) {
+                return count === 1 ? '1 member' : count + ' members';
+            }
+
+            function updateDetailTitle(group) {
+                document.querySelector('#groupDetailTitle').textContent = 'Group: ' + group.Name;
+            }
+
+            function showListView() {
+                BingeBuddyConfig.selectedGroupId = null;
+                setBbVisible(document.querySelector('#groupsListView'), true);
+                setBbVisible(document.querySelector('#groupDetailView'), false);
+                setBbVisible(document.querySelector('#bbPageIntro'), true);
+            }
+
+            function showDetailView(groupId) {
+                var group = getGroupById(groupId);
+                if (!group) {
+                    return;
+                }
+
+                BingeBuddyConfig.selectedGroupId = group.Id;
+                setBbVisible(document.querySelector('#groupsListView'), false);
+                setBbVisible(document.querySelector('#groupDetailView'), true);
+                setBbVisible(document.querySelector('#bbPageIntro'), false);
+                updateDetailTitle(group);
+                renderUsersList(group);
+            }
+
+            function openGroup(groupId) {
+                showDetailView(groupId);
+            }
+
+            function renderGroupsGrid() {
+                var groups = getGroups();
+                var grid = document.querySelector('#groupsGrid');
+                var emptyState = document.querySelector('#groupsEmptyState');
+
+                grid.innerHTML = '';
+
+                if (!groups.length) {
+                    setBbVisible(grid, false);
+                    setBbVisible(emptyState, true);
+                    return;
+                }
+
+                setBbVisible(grid, true);
+                setBbVisible(emptyState, false);
+
+                groups.forEach(function (group) {
+                    var card = document.createElement('article');
+                    card.className = 'bb-group-card';
+                    card.dataset.groupId = group.Id;
+
+                    var top = document.createElement('div');
+                    top.className = 'bb-group-card-top';
+
+                    var body = document.createElement('div');
+                    body.className = 'bb-group-card-body';
+
+                    var name = document.createElement('h3');
+                    name.className = 'bb-group-card-name';
+                    name.textContent = group.Name;
+
+                    var meta = document.createElement('div');
+                    meta.className = 'bb-group-card-meta';
+
+                    var badge = document.createElement('span');
+                    badge.className = 'bb-badge';
+                    badge.textContent = memberCountLabel(getMemberCount(group));
+
+                    meta.appendChild(badge);
+                    body.appendChild(name);
+                    body.appendChild(meta);
+
+                    top.appendChild(body);
+
+                    var footer = document.createElement('div');
+                    footer.className = 'bb-group-card-footer';
+
+                    var manageButton = document.createElement('button');
+                    manageButton.type = 'button';
+                    manageButton.className = 'raised emby-button';
+                    manageButton.setAttribute('is', 'emby-button');
+                    manageButton.innerHTML = '<span>Manage group →</span>';
+                    manageButton.addEventListener('click', function (event) {
+                        event.stopPropagation();
+                        openGroup(group.Id);
+                    });
+
+                    footer.appendChild(manageButton);
+                    card.appendChild(top);
+                    card.appendChild(footer);
+                    grid.appendChild(card);
+                });
+            }
+
+            function isUserInGroup(group, userId) {
+                var memberIds = (group && group.MemberUserIds) ? group.MemberUserIds : [];
+                return memberIds.some(function (memberId) {
+                    return normalizeGuid(memberId) === normalizeGuid(userId);
+                });
+            }
+
+            function syncUserRowState(row, checkbox) {
+                if (checkbox.checked) {
+                    row.classList.add('is-selected');
+                } else {
+                    row.classList.remove('is-selected');
+                }
+            }
+
+            function renderUsersList(group) {
+                var usersList = document.querySelector('#usersList');
+                usersList.innerHTML = '';
+
+                if (!BingeBuddyConfig.users.length) {
+                    var emptyUsers = document.createElement('div');
+                    emptyUsers.className = 'bb-empty-state';
+                    emptyUsers.innerHTML = '<p class="bb-empty-state-title">No users found</p><p>Add users in the Jellyfin dashboard first.</p>';
+                    usersList.appendChild(emptyUsers);
+                    return;
+                }
+
+                BingeBuddyConfig.users.forEach(function (user) {
+                    var row = document.createElement('div');
+                    row.className = 'bb-user-row checkboxContainer';
+
+                    var label = document.createElement('label');
+                    label.className = 'emby-checkbox-label';
+
+                    var checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.is = 'emby-checkbox';
+                    checkbox.dataset.userId = user.Id;
+                    checkbox.checked = isUserInGroup(group, user.Id);
+
+                    var name = document.createElement('span');
+                    name.textContent = user.Name;
+
+                    label.appendChild(checkbox);
+                    label.appendChild(name);
+                    row.appendChild(label);
+
+                    syncUserRowState(row, checkbox);
+
+                    checkbox.addEventListener('change', function () {
+                        syncUserRowState(row, checkbox);
+                    });
+
+                    usersList.appendChild(row);
+                });
+            }
+
+            function saveConfiguration(onSuccess) {
+                return ApiClient.updatePluginConfiguration(BingeBuddyConfig.pluginUniqueId, BingeBuddyConfig.config)
+                    .then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                        if (typeof onSuccess === 'function') {
+                            onSuccess();
+                        }
+                    });
+            }
+
+            function loadPageData() {
+                Dashboard.showLoadingMsg();
+
+                Promise.all([
+                    ApiClient.getPluginConfiguration(BingeBuddyConfig.pluginUniqueId),
+                    ApiClient.getUsers()
+                ]).then(function (results) {
+                    BingeBuddyConfig.config = normalizeConfig(results[0] || {});
+                    BingeBuddyConfig.users = results[1] || [];
+
+                    if (BingeBuddyConfig.selectedGroupId) {
+                        var selectedGroup = getGroupById(BingeBuddyConfig.selectedGroupId);
+                        if (selectedGroup) {
+                            showDetailView(selectedGroup.Id);
+                        } else {
+                            showListView();
+                            renderGroupsGrid();
+                        }
+                    } else {
+                        showListView();
+                        renderGroupsGrid();
+                    }
+
+                    Dashboard.hideLoadingMsg();
+                }).catch(function () {
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            document.querySelector('#BingeBuddyConfigPage')
+                .addEventListener('pageshow', function () {
+                    loadPageData();
+                });
+
+            document.querySelector('#createGroupButton')
+                .addEventListener('click', function () {
+                    var nameInput = document.querySelector('#newGroupName');
+                    var name = (nameInput.value || '').trim();
+
+                    if (!name) {
+                        Dashboard.alert({
+                            title: 'Group name required',
+                            message: 'Please enter a name for the new group.'
+                        });
+                        return;
+                    }
+
+                    var duplicate = getGroups().some(function (group) {
+                        return group.Name.toLowerCase() === name.toLowerCase();
+                    });
+
+                    if (duplicate) {
+                        Dashboard.alert({
+                            title: 'Duplicate group name',
+                            message: 'A group with this name already exists.'
+                        });
+                        return;
+                    }
+
                     Dashboard.showLoadingMsg();
-                    ApiClient.getPluginConfiguration(TemplateConfig.pluginUniqueId).then(function (config) {
-                        document.querySelector('#Options').value = config.Options;
-                        document.querySelector('#AnInteger').value = config.AnInteger;
-                        document.querySelector('#TrueFalseSetting').checked = config.TrueFalseSetting;
-                        document.querySelector('#AString').value = config.AString;
+
+                    var newGroup = {
+                        Id: createGuid(),
+                        Name: name,
+                        MemberUserIds: []
+                    };
+
+                    BingeBuddyConfig.config.Groups.push(newGroup);
+
+                    saveConfiguration(function () {
+                        nameInput.value = '';
+                        renderGroupsGrid();
+                        Dashboard.hideLoadingMsg();
+                    }).catch(function () {
+                        BingeBuddyConfig.config.Groups.pop();
                         Dashboard.hideLoadingMsg();
                     });
                 });
 
-            document.querySelector('#TemplateConfigForm')
-                .addEventListener('submit', function(e) {
-                Dashboard.showLoadingMsg();
-                ApiClient.getPluginConfiguration(TemplateConfig.pluginUniqueId).then(function (config) {
-                    config.Options = document.querySelector('#Options').value;
-                    config.AnInteger = document.querySelector('#AnInteger').value;
-                    config.TrueFalseSetting = document.querySelector('#TrueFalseSetting').checked;
-                    config.AString = document.querySelector('#AString').value;
-                    ApiClient.updatePluginConfiguration(TemplateConfig.pluginUniqueId, config).then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                    });
+            document.querySelector('#newGroupName')
+                .addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        document.querySelector('#createGroupButton').click();
+                    }
                 });
 
-                e.preventDefault();
-                return false;
-            });
+            document.querySelector('#backToGroupsButton')
+                .addEventListener('click', function () {
+                    showListView();
+                    renderGroupsGrid();
+                });
+
+            document.querySelector('#groupMembersForm')
+                .addEventListener('submit', function (event) {
+                    event.preventDefault();
+
+                    var group = getGroupById(BingeBuddyConfig.selectedGroupId);
+                    if (!group) {
+                        return false;
+                    }
+
+                    Dashboard.showLoadingMsg();
+
+                    var selectedUserIds = [];
+                    document.querySelectorAll('#usersList input[type="checkbox"]').forEach(function (checkbox) {
+                        if (checkbox.checked) {
+                            selectedUserIds.push(checkbox.dataset.userId);
+                        }
+                    });
+
+                    group.MemberUserIds = selectedUserIds;
+
+                    saveConfiguration(function () {
+                        updateDetailTitle(group);
+                        renderGroupsGrid();
+                        Dashboard.hideLoadingMsg();
+                    }).catch(function () {
+                        Dashboard.hideLoadingMsg();
+                    });
+
+                    return false;
+                });
+
+            document.querySelector('#deleteGroupButton')
+                .addEventListener('click', function () {
+                    var group = getGroupById(BingeBuddyConfig.selectedGroupId);
+                    if (!group) {
+                        return;
+                    }
+
+                    Dashboard.confirm(
+                        'Delete the group "' + group.Name + '"? This cannot be undone.',
+                        'Delete Group',
+                        false
+                    ).then(function () {
+                        Dashboard.showLoadingMsg();
+
+                        BingeBuddyConfig.config.Groups = getGroups().filter(function (item) {
+                            return normalizeGuid(item.Id) !== normalizeGuid(group.Id);
+                        });
+
+                        saveConfiguration(function () {
+                            showListView();
+                            renderGroupsGrid();
+                            Dashboard.hideLoadingMsg();
+                        }).catch(function () {
+                            Dashboard.hideLoadingMsg();
+                            loadPageData();
+                        });
+                    });
+                });
         </script>
     </div>
 </body>

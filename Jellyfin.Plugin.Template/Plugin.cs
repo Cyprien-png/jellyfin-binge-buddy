@@ -26,7 +26,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     }
 
     /// <inheritdoc />
-    public override string Name => "Binge Buddy";
+    public override string Name => "BingeBuddy";
 
     /// <inheritdoc />
     public override Guid Id => Guid.Parse("03b66f74-f14e-4e5c-a123-b71f4da3d6d3");
