@@ -105,8 +105,9 @@
 
         if (watchers.length > 3) {
             var more = document.createElement('span');
+            more.count = watchers.length - 3;
             more.className = 'bb-watcher-more';
-            more.textContent = '+' + (watchers.length - 3);
+            more.textContent = more.count > 99 ? '99+' : '+' + more.count;
             more.title = watchers.slice(3).map(function (watcher) {
                 return watcher.Name || watcher.name;
             }).join(', ');
