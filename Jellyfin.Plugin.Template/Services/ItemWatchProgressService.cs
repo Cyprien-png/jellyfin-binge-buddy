@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.Template.Abstractions;
 using Jellyfin.Plugin.Template.Api;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
+using Microsoft.EntityFrameworkCore;
 
 namespace Jellyfin.Plugin.Template.Services;
 
@@ -19,30 +22,26 @@ public class ItemWatchProgressService : IItemWatchProgressService
 
     private readonly IGroupMembershipService _groupMembershipService;
     private readonly IUserProfileService _userProfileService;
-    private readonly IUserManager _userManager;
     private readonly ILibraryManager _libraryManager;
-    private readonly IUserDataManager _userDataManager;
+    private readonly IDbContextFactory<JellyfinDbContext> _dbContextFactory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ItemWatchProgressService"/> class.
     /// </summary>
     /// <param name="groupMembershipService">The group membership service.</param>
     /// <param name="userProfileService">The user profile service.</param>
-    /// <param name="userManager">The Jellyfin user manager.</param>
     /// <param name="libraryManager">The Jellyfin library manager.</param>
-    /// <param name="userDataManager">The Jellyfin user data manager.</param>
+    /// <param name="dbContextFactory">The Jellyfin database context factory.</param>
     public ItemWatchProgressService(
         IGroupMembershipService groupMembershipService,
         IUserProfileService userProfileService,
-        IUserManager userManager,
         ILibraryManager libraryManager,
-        IUserDataManager userDataManager)
+        IDbContextFactory<JellyfinDbContext> dbContextFactory)
     {
         _groupMembershipService = groupMembershipService;
         _userProfileService = userProfileService;
-        _userManager = userManager;
         _libraryManager = libraryManager;
-        _userDataManager = userDataManager;
+        _dbContextFactory = dbContextFactory;
     }
 
     /// <inheritdoc />
@@ -67,34 +66,68 @@ public class ItemWatchProgressService : IItemWatchProgressService
             return result;
         }
 
-        foreach (var itemId in itemIds.Distinct())
+        var distinctItemIds = itemIds.Distinct().ToList();
+        var supportedItemIds = distinctItemIds
+            .Where(itemId => TryGetSupportedItem(itemId, currentUserId, out _))
+            .ToList();
+
+        foreach (var unsupportedItemId in distinctItemIds.Except(supportedItemIds))
         {
-            if (!TryGetSupportedItem(itemId, currentUserId, out var item))
-            {
-                result[itemId] = Array.Empty<GroupUserDto>();
-                continue;
-            }
+            result[unsupportedItemId] = Array.Empty<GroupUserDto>();
+        }
 
-            var watchers = new List<GroupUserDto>();
-            foreach (var memberId in visibleMemberIds)
-            {
-                if (!HasStartedWatching(memberId, item))
-                {
-                    continue;
-                }
+        if (supportedItemIds.Count == 0)
+        {
+            return result;
+        }
 
-                var watcher = _userProfileService.MapUser(memberId, OverlayAvatarSize);
-                if (watcher is not null)
-                {
-                    watchers.Add(watcher);
-                }
-            }
+        var startedMembersByItem = LoadStartedMembersByItem(supportedItemIds, visibleMemberIds);
 
-            watchers.Sort((left, right) => string.Compare(left.Name, right.Name, StringComparison.OrdinalIgnoreCase));
+        foreach (var itemId in supportedItemIds)
+        {
+            var startedMemberIds = startedMembersByItem.GetValueOrDefault(itemId) ?? Array.Empty<Guid>();
+            var watchers = startedMemberIds
+                .Select(memberId => _userProfileService.MapUser(memberId, OverlayAvatarSize))
+                .Where(watcher => watcher is not null)
+                .Select(watcher => watcher!)
+                .OrderBy(watcher => watcher.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             result[itemId] = watchers;
         }
 
         return result;
+    }
+
+    private Dictionary<Guid, IReadOnlyList<Guid>> LoadStartedMembersByItem(
+        IReadOnlyList<Guid> itemIds,
+        IReadOnlyList<Guid> memberIds)
+    {
+        using var context = _dbContextFactory.CreateDbContext();
+
+        var rows = context.UserData
+            .AsNoTracking()
+            .Where(userData => itemIds.Contains(userData.ItemId) && memberIds.Contains(userData.UserId))
+            .ToList();
+
+        var startedMembersByItem = itemIds.ToDictionary(itemId => itemId, _ => new HashSet<Guid>());
+
+        foreach (var row in rows)
+        {
+            if (!HasStartedWatching(row))
+            {
+                continue;
+            }
+
+            if (startedMembersByItem.TryGetValue(row.ItemId, out var memberSet))
+            {
+                memberSet.Add(row.UserId);
+            }
+        }
+
+        return startedMembersByItem.ToDictionary(
+            entry => entry.Key,
+            entry => (IReadOnlyList<Guid>)entry.Value.OrderBy(id => id).ToList());
     }
 
     private bool TryGetSupportedItem(Guid itemId, Guid currentUserId, out BaseItem item)
@@ -125,22 +158,11 @@ public class ItemWatchProgressService : IItemWatchProgressService
         return false;
     }
 
-    private bool HasStartedWatching(Guid userId, BaseItem item)
+    private static bool HasStartedWatching(UserData userData)
     {
-        var user = _userManager.GetUserById(userId);
-        if (user is null)
-        {
-            return false;
-        }
-
-        var userData = _userDataManager.GetUserData(user, item);
-        if (userData is null)
-        {
-            return false;
-        }
-
         return userData.Played
             || userData.PlayCount > 0
-            || userData.PlaybackPositionTicks > 0;
+            || userData.PlaybackPositionTicks > 0
+            || userData.LastPlayedDate.HasValue;
     }
 }
