@@ -3,251 +3,6 @@
 <head>
     <meta charset="utf-8">
     <title>Binge Buddy</title>
-    <style>
-        #BingeBuddyConfigPage {
-            --bb-accent: #00a4dc;
-            --bb-accent-soft: rgba(0, 164, 220, 0.15);
-            --bb-surface: rgba(0, 0, 0, 0.28);
-            --bb-surface-hover: rgba(0, 0, 0, 0.38);
-            --bb-border: rgba(255, 255, 255, 0.12);
-            --bb-border-strong: rgba(255, 255, 255, 0.22);
-            --bb-text-muted: rgba(255, 255, 255, 0.65);
-            --bb-radius: 0.5rem;
-            --bb-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
-        }
-
-        .bb-page-intro {
-            margin-bottom: 1.75rem;
-            line-height: 1.5;
-            color: var(--bb-text-muted);
-        }
-
-        .bb-section {
-            margin-bottom: 2rem;
-            padding: 1.25rem 1.35rem 1.35rem;
-            border: 1px solid var(--bb-border);
-            border-radius: var(--bb-radius);
-            background: var(--bb-surface);
-            box-shadow: var(--bb-shadow);
-        }
-
-        .bb-section-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            padding-bottom: 0.85rem;
-            border-bottom: 2px solid var(--bb-accent);
-        }
-
-        .bb-section-header-compact {
-            margin-bottom: 0.75rem;
-            padding-bottom: 0.65rem;
-        }
-
-        .bb-section-title {
-            margin: 0;
-            font-size: 1.15rem;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-        }
-
-        .bb-section-subtitle {
-            margin: 0.35rem 0 0;
-            font-size: 0.92rem;
-            color: var(--bb-text-muted);
-            line-height: 1.45;
-        }
-
-        .bb-create-row {
-            display: flex;
-            align-items: flex-end;
-            gap: 0.85rem;
-            flex-wrap: wrap;
-        }
-
-        .bb-create-row .inputContainer {
-            flex: 1 1 18rem;
-            margin-bottom: 0;
-        }
-
-        .bb-groups-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-            gap: 1rem;
-        }
-
-        .bb-group-card {
-            display: flex;
-            flex-direction: column;
-            min-height: 11rem;
-            padding: 0;
-            border: 1px solid var(--bb-border);
-            border-radius: var(--bb-radius);
-            background: rgba(255, 255, 255, 0.04);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-            overflow: hidden;
-            transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .bb-group-card:hover {
-            border-color: var(--bb-border-strong);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
-        }
-
-        .bb-group-card-top {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.85rem;
-            padding: 1rem 1rem 0.75rem;
-            flex: 1;
-        }
-
-        .bb-group-card-body {
-            min-width: 0;
-            flex: 1;
-        }
-
-        .bb-group-card-name {
-            margin: 0 0 0.45rem;
-            font-size: 1.05rem;
-            font-weight: 700;
-            word-break: break-word;
-        }
-
-        .bb-group-card-meta {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .bb-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.2rem 0.55rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid var(--bb-border);
-            font-size: 0.82rem;
-            color: var(--bb-text-muted);
-        }
-
-        .bb-group-card-footer {
-            padding: 0.85rem 1rem 1rem;
-            border-top: 1px solid var(--bb-border);
-            background: rgba(0, 0, 0, 0.12);
-        }
-
-        .bb-group-card-footer button {
-            width: 100%;
-        }
-
-        .bb-empty-state {
-            padding: 2.25rem 1rem;
-            text-align: center;
-            border: 1px dashed var(--bb-border-strong);
-            border-radius: var(--bb-radius);
-            color: var(--bb-text-muted);
-            background: rgba(0, 0, 0, 0.12);
-        }
-
-        .bb-empty-state-title {
-            margin: 0 0 0.35rem;
-            font-size: 1rem;
-            font-weight: 600;
-            color: inherit;
-        }
-
-        .bb-detail-top {
-            margin-bottom: 1.5rem;
-        }
-
-        .bb-detail-top button {
-            margin-bottom: 0.85rem;
-        }
-
-        .bb-detail-page-title {
-            margin: 0;
-            font-size: 1.25rem;
-            font-weight: 700;
-            word-break: break-word;
-        }
-
-        .bb-users-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.55rem;
-        }
-
-        .bb-user-row.checkboxContainer {
-            margin: 0;
-            padding: 0.65rem 1rem;
-            border: 1px solid var(--bb-border);
-            border-radius: calc(var(--bb-radius) - 0.1rem);
-            background: rgba(0, 0, 0, 0.14);
-            transition: background 0.12s ease, border-color 0.12s ease;
-        }
-
-        .bb-user-row.checkboxContainer:hover {
-            background: rgba(0, 0, 0, 0.24);
-            border-color: var(--bb-border-strong);
-        }
-
-        .bb-user-row.checkboxContainer.is-selected {
-            border-color: rgba(0, 164, 220, 0.55);
-            background: var(--bb-accent-soft);
-        }
-
-        .bb-user-row .emby-checkbox-label {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            margin: 0;
-            cursor: pointer;
-        }
-
-        .bb-user-row .emby-checkbox-label span {
-            font-size: 0.98rem;
-            font-weight: 600;
-            line-height: 1.2;
-        }
-
-        .bb-actions-bar {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            margin-top: 1.25rem;
-            padding-top: 1.1rem;
-            border-top: 1px solid var(--bb-border);
-        }
-
-        .bb-actions-bar .bb-danger-zone {
-            margin-left: auto;
-        }
-
-        .bb-danger-button {
-            color: #ff8f8f !important;
-        }
-
-        #BingeBuddyConfigPage [data-bb-hidden="true"] {
-            display: none !important;
-        }
-
-        @media (max-width: 40rem) {
-            .bb-actions-bar .bb-danger-zone {
-                margin-left: 0;
-                width: 100%;
-            }
-
-            .bb-actions-bar .bb-danger-zone button {
-                width: 100%;
-            }
-        }
-    </style>
 </head>
 <body>
     <div id="BingeBuddyConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
@@ -310,7 +65,7 @@
                         </div>
 
                         <form id="groupMembersForm">
-                            <div id="usersList" class="bb-users-list"></div>
+                            <div id="usersList" class="bb-users-list checkboxListContainer"></div>
 
                             <div class="bb-actions-bar">
                                 <button is="emby-button" type="submit" class="raised button-submit emby-button">
@@ -329,11 +84,240 @@
         </div>
 
         <script type="text/javascript">
+            function injectBingeBuddyStyles() {
+                var styleId = 'binge-buddy-config-styles';
+                var existingStyle = document.getElementById(styleId);
+
+                if (existingStyle) {
+                    return;
+                }
+
+                var style = document.createElement('style');
+                style.id = styleId;
+                style.type = 'text/css';
+                style.textContent = [
+                    '#BingeBuddyConfigPage {',
+                    '    --bb-accent: #00a4dc;',
+                    '    --bb-accent-soft: rgba(0, 164, 220, 0.15);',
+                    '    --bb-surface: rgba(0, 0, 0, 0.28);',
+                    '    --bb-surface-hover: rgba(0, 0, 0, 0.38);',
+                    '    --bb-border: rgba(255, 255, 255, 0.12);',
+                    '    --bb-border-strong: rgba(255, 255, 255, 0.22);',
+                    '    --bb-text-muted: rgba(255, 255, 255, 0.65);',
+                    '    --bb-radius: 0.5rem;',
+                    '    --bb-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-page-intro {',
+                    '    margin-bottom: 1.75rem;',
+                    '    line-height: 1.5;',
+                    '    color: var(--bb-text-muted);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-section {',
+                    '    margin-bottom: 2rem;',
+                    '    padding: 1.25rem 1.35rem 1.35rem;',
+                    '    border: 1px solid var(--bb-border);',
+                    '    border-radius: var(--bb-radius);',
+                    '    background: var(--bb-surface);',
+                    '    box-shadow: var(--bb-shadow);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-section-header {',
+                    '    display: flex;',
+                    '    align-items: flex-start;',
+                    '    justify-content: space-between;',
+                    '    gap: 1rem;',
+                    '    margin-bottom: 1rem;',
+                    '    padding-bottom: 0.85rem;',
+                    '    border-bottom: 2px solid var(--bb-accent);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-section-header-compact {',
+                    '    margin-bottom: 0.75rem;',
+                    '    padding-bottom: 0.65rem;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-section-title {',
+                    '    margin: 0;',
+                    '    font-size: 1.15rem;',
+                    '    font-weight: 700;',
+                    '    letter-spacing: 0.02em;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-section-subtitle {',
+                    '    margin: 0.35rem 0 0;',
+                    '    font-size: 0.92rem;',
+                    '    color: var(--bb-text-muted);',
+                    '    line-height: 1.45;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-create-row {',
+                    '    display: flex;',
+                    '    align-items: flex-end;',
+                    '    gap: 0.85rem;',
+                    '    flex-wrap: wrap;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-create-row .inputContainer {',
+                    '    flex: 1 1 18rem;',
+                    '    margin-bottom: 0;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-groups-grid {',
+                    '    display: grid;',
+                    '    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));',
+                    '    gap: 1rem;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-group-card {',
+                    '    display: flex;',
+                    '    flex-direction: column;',
+                    '    min-height: 11rem;',
+                    '    padding: 0;',
+                    '    border: 1px solid var(--bb-border);',
+                    '    border-radius: var(--bb-radius);',
+                    '    background: rgba(255, 255, 255, 0.04);',
+                    '    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);',
+                    '    overflow: hidden;',
+                    '    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-group-card:hover {',
+                    '    border-color: var(--bb-border-strong);',
+                    '    transform: translateY(-2px);',
+                    '    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-group-card-top {',
+                    '    display: flex;',
+                    '    align-items: flex-start;',
+                    '    gap: 0.85rem;',
+                    '    padding: 1rem 1rem 0.75rem;',
+                    '    flex: 1;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-group-card-body {',
+                    '    min-width: 0;',
+                    '    flex: 1;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-group-card-name {',
+                    '    margin: 0 0 0.45rem;',
+                    '    font-size: 1.05rem;',
+                    '    font-weight: 700;',
+                    '    word-break: break-word;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-group-card-meta {',
+                    '    display: flex;',
+                    '    align-items: center;',
+                    '    gap: 0.5rem;',
+                    '    flex-wrap: wrap;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-badge {',
+                    '    display: inline-flex;',
+                    '    align-items: center;',
+                    '    padding: 0.2rem 0.55rem;',
+                    '    border-radius: 999px;',
+                    '    background: rgba(255, 255, 255, 0.08);',
+                    '    border: 1px solid var(--bb-border);',
+                    '    font-size: 0.82rem;',
+                    '    color: var(--bb-text-muted);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-group-card-footer {',
+                    '    padding: 0.85rem 1rem 1rem;',
+                    '    border-top: 1px solid var(--bb-border);',
+                    '    background: rgba(0, 0, 0, 0.12);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-group-card-footer button {',
+                    '    width: 100%;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-empty-state {',
+                    '    padding: 2.25rem 1rem;',
+                    '    text-align: center;',
+                    '    border: 1px dashed var(--bb-border-strong);',
+                    '    border-radius: var(--bb-radius);',
+                    '    color: var(--bb-text-muted);',
+                    '    background: rgba(0, 0, 0, 0.12);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-empty-state-title {',
+                    '    margin: 0 0 0.35rem;',
+                    '    font-size: 1rem;',
+                    '    font-weight: 600;',
+                    '    color: inherit;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-detail-top {',
+                    '    margin-bottom: 1.5rem;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-detail-top button {',
+                    '    margin-bottom: 0.85rem;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-detail-page-title {',
+                    '    margin: 0;',
+                    '    font-size: 1.25rem;',
+                    '    font-weight: 700;',
+                    '    word-break: break-word;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-users-list,',
+                    '#BingeBuddyConfigPage .checkboxListContainer {',
+                    '    display: flex;',
+                    '    flex-direction: column;',
+                    '    gap: 0.55rem;',
+                    '    margin-bottom: 0 !important;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-user-row.checkboxContainer {',
+                    '    margin: 0 !important;',
+                    '    padding: 0.65rem 1rem;',
+                    '    border: 1px solid var(--bb-border);',
+                    '    border-radius: calc(var(--bb-radius) - 0.1rem);',
+                    '    background: rgba(0, 0, 0, 0.14);',
+                    '    transition: background 0.12s ease, border-color 0.12s ease;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-user-row.checkboxContainer:hover {',
+                    '    background: rgba(0, 0, 0, 0.24);',
+                    '    border-color: var(--bb-border-strong);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-user-row.checkboxContainer.is-selected {',
+                    '    border-color: rgba(0, 164, 220, 0.55);',
+                    '    background: var(--bb-accent-soft);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-user-row .emby-checkbox-label {',
+                    '    display: flex;',
+                    '    align-items: center;',
+                    '    width: 100%;',
+                    '    margin: 0;',
+                    '    cursor: pointer;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-user-row .emby-checkbox-label span {',
+                    '    font-size: 0.98rem;',
+                    '    font-weight: 600;',
+                    '    line-height: 1.2;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-actions-bar {',
+                    '    display: flex;',
+                    '    align-items: center;',
+                    '    gap: 0.75rem;',
+                    '    flex-wrap: wrap;',
+                    '    margin-top: 1.25rem;',
+                    '    padding-top: 1.1rem;',
+                    '    border-top: 1px solid var(--bb-border);',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-actions-bar .bb-danger-zone {',
+                    '    margin-left: auto;',
+                    '}',
+                    '#BingeBuddyConfigPage .bb-danger-button {',
+                    '    color: #ff8f8f !important;',
+                    '}',
+                    '#BingeBuddyConfigPage [data-bb-hidden="true"] {',
+                    '    display: none !important;',
+                    '}',
+                    '@media (max-width: 40rem) {',
+                    '    #BingeBuddyConfigPage .bb-actions-bar .bb-danger-zone {',
+                    '        margin-left: 0;',
+                    '        width: 100%;',
+                    '    }',
+                    '    #BingeBuddyConfigPage .bb-actions-bar .bb-danger-zone button {',
+                    '        width: 100%;',
+                    '    }',
+                    '}'
+                ].join('\n');
+
+                (document.head || document.documentElement).appendChild(style);
+            }
+
             var BingeBuddyConfig = {
                 pluginUniqueId: '03b66f74-f14e-4e5c-a123-b71f4da3d6d3',
                 config: null,
                 users: [],
-                selectedGroupId: null
+                selectedGroupId: null,
+                isSaving: false,
+                saveQueue: Promise.resolve()
             };
 
             function setBbVisible(element, visible) {
@@ -545,32 +529,66 @@
                 });
             }
 
-            function saveConfiguration(applyChanges, onSuccess) {
-                Dashboard.showLoadingMsg();
+            function setSavingState(isSaving) {
+                BingeBuddyConfig.isSaving = isSaving;
+                document.querySelector('#createGroupButton').disabled = isSaving;
+                document.querySelector('#groupsGrid').style.pointerEvents = isSaving ? 'none' : '';
+                document.querySelector('#groupMembersForm').style.pointerEvents = isSaving ? 'none' : '';
+            }
 
+            function reloadConfiguration() {
                 return ApiClient.getPluginConfiguration(BingeBuddyConfig.pluginUniqueId)
                     .then(function (config) {
-                        config = normalizeConfig(config || {});
-
-                        if (typeof applyChanges === 'function') {
-                            applyChanges(config);
-                        }
-
-                        delete config.groups;
-                        BingeBuddyConfig.config = config;
-
-                        return ApiClient.updatePluginConfiguration(BingeBuddyConfig.pluginUniqueId, config);
-                    })
-                    .then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-
-                        if (typeof onSuccess === 'function') {
-                            onSuccess();
-                        }
-                    })
-                    .catch(function () {
-                        Dashboard.hideLoadingMsg();
+                        BingeBuddyConfig.config = normalizeConfig(config || {});
+                        return BingeBuddyConfig.config;
                     });
+            }
+
+            function saveConfiguration(applyChanges, onSuccess) {
+                BingeBuddyConfig.saveQueue = BingeBuddyConfig.saveQueue
+                    .catch(function () { })
+                    .then(function () {
+                        setSavingState(true);
+                        Dashboard.showLoadingMsg();
+
+                        return ApiClient.getPluginConfiguration(BingeBuddyConfig.pluginUniqueId)
+                            .then(function (config) {
+                                config = normalizeConfig(config || {});
+
+                                if (typeof applyChanges === 'function') {
+                                    applyChanges(config);
+                                }
+
+                                delete config.groups;
+                                BingeBuddyConfig.config = config;
+
+                                return ApiClient.updatePluginConfiguration(BingeBuddyConfig.pluginUniqueId, config);
+                            })
+                            .then(function (result) {
+                                return reloadConfiguration().then(function () {
+                                    return result;
+                                });
+                            })
+                            .then(function (result) {
+                                Dashboard.processPluginConfigurationUpdateResult(result);
+
+                                if (typeof onSuccess === 'function') {
+                                    onSuccess();
+                                }
+                            })
+                            .catch(function () {
+                                Dashboard.hideLoadingMsg();
+                                Dashboard.alert({
+                                    title: 'Save failed',
+                                    message: 'Could not save plugin settings. Please try again.'
+                                });
+                            })
+                            .finally(function () {
+                                setSavingState(false);
+                            });
+                    });
+
+                return BingeBuddyConfig.saveQueue;
             }
 
             function loadPageData() {
@@ -602,8 +620,11 @@
                 });
             }
 
+            injectBingeBuddyStyles();
+
             document.querySelector('#BingeBuddyConfigPage')
                 .addEventListener('pageshow', function () {
+                    injectBingeBuddyStyles();
                     loadPageData();
                 });
 
@@ -642,6 +663,7 @@
                         config.Groups.push(newGroup);
                     }, function () {
                         nameInput.value = '';
+                        showListView();
                         renderGroupsGrid();
                     });
                 });
@@ -656,8 +678,14 @@
 
             document.querySelector('#backToGroupsButton')
                 .addEventListener('click', function () {
-                    showListView();
-                    renderGroupsGrid();
+                    if (BingeBuddyConfig.isSaving) {
+                        return;
+                    }
+
+                    reloadConfiguration().then(function () {
+                        showListView();
+                        renderGroupsGrid();
+                    });
                 });
 
             document.querySelector('#groupMembersForm')
@@ -682,9 +710,11 @@
                             return normalizeGuid(item.Id) === normalizeGuid(groupId);
                         });
 
-                        if (targetGroup) {
-                            targetGroup.MemberUserIds = selectedUserIds;
+                        if (!targetGroup) {
+                            throw new Error('Group not found');
                         }
+
+                        targetGroup.MemberUserIds = selectedUserIds;
                     }, function () {
                         var updatedGroup = getGroupById(groupId);
                         if (updatedGroup) {
