@@ -5,7 +5,7 @@
         return;
     }
 
-    var CARD_SELECTOR = '.cardImageContainer, div.listItemImage';
+    var CARD_SELECTOR = 'a.cardImageContainer.cardContent, div.listItemImage';
     var OVERLAY_CLASS = 'bb-watcher-stack';
     var pendingItemIds = new Set();
     var overlayCache = new Map();
@@ -45,19 +45,6 @@
     }
 
     function getMountPoint(imageContainer) {
-        var card = findCardRoot(imageContainer);
-        if (card) {
-            var scalable = card.querySelector('.cardScalable');
-            if (scalable) {
-                return scalable;
-            }
-
-            var cardBox = card.querySelector('.cardBox');
-            if (cardBox) {
-                return cardBox;
-            }
-        }
-
         return imageContainer;
     }
 

@@ -1,17 +1,10 @@
-.cardScalable,
-.cardBox,
-.cardImageContainer,
-div.listItemImage {
-    position: relative;
-}
-
 .bb-watcher-stack {
     position: absolute;
     left: 0.45rem;
-    bottom: 0.45rem;
+    top: 0.45rem;
     display: flex;
     align-items: center;
-    z-index: 6;
+    z-index: 2;
     pointer-events: none;
 }
 
