@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Jellyfin.Plugin.Template.Services;
+using Jellyfin.Plugin.Template.Abstractions;
 using MediaBrowser.Common.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -16,13 +16,13 @@ namespace Jellyfin.Plugin.Template.Api;
 [Produces("application/json")]
 public class BingeBuddyController : ControllerBase
 {
-    private readonly UserProfileService _userProfileService;
+    private readonly IUserProfileService _userProfileService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BingeBuddyController"/> class.
     /// </summary>
     /// <param name="userProfileService">The user profile service.</param>
-    public BingeBuddyController(UserProfileService userProfileService)
+    public BingeBuddyController(IUserProfileService userProfileService)
     {
         _userProfileService = userProfileService;
     }

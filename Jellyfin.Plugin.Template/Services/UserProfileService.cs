@@ -2,16 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using Jellyfin.Data.Entities;
+using Jellyfin.Plugin.Template.Abstractions;
 using Jellyfin.Plugin.Template.Api;
 using MediaBrowser.Controller.Library;
 
 namespace Jellyfin.Plugin.Template.Services;
 
 /// <summary>
-/// Resolves Jellyfin users and profile images for group settings.
+/// Resolves Jellyfin users and profile images for the plugin.
 /// </summary>
-public class UserProfileService
+public class UserProfileService : IUserProfileService
 {
     private readonly IUserManager _userManager;
 
@@ -24,60 +24,44 @@ public class UserProfileService
         _userManager = userManager;
     }
 
-    /// <summary>
-    /// Gets all users with profile image metadata for the group settings UI.
-    /// </summary>
-    /// <returns>A sorted list of users.</returns>
+    /// <inheritdoc />
     public IReadOnlyList<GroupUserDto> GetUsersForGroupSettings()
     {
-        return _userManager.Users
+        return _userManager.GetUsers()
             .OrderBy(user => user.Username, StringComparer.OrdinalIgnoreCase)
-            .Select(MapToGroupUserDto)
+            .Select(user => MapUser(user.Id))
+            .Where(user => user is not null)
+            .Select(user => user!)
             .ToList();
     }
 
-    /// <summary>
-    /// Gets a user by identifier.
-    /// </summary>
-    /// <param name="userId">The user identifier.</param>
-    /// <returns>The user, if found.</returns>
-    public User? GetUser(Guid userId)
+    /// <inheritdoc />
+    public GroupUserDto? MapUser(Guid userId, int avatarSize = 88)
     {
-        return _userManager.GetUserById(userId);
-    }
-
-    private GroupUserDto MapToGroupUserDto(User user)
-    {
-        try
+        var user = _userManager.GetUserById(userId);
+        if (user is null)
         {
-            var dto = _userManager.GetUserDto(user);
-            var hasPrimaryImage = !string.IsNullOrEmpty(dto.PrimaryImageTag);
-
-            string? imageUrl = null;
-            if (hasPrimaryImage && !string.IsNullOrEmpty(dto.PrimaryImageTag))
-            {
-                imageUrl = string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"/Users/{user.Id}/Images/Primary?tag={Uri.EscapeDataString(dto.PrimaryImageTag)}&maxHeight=88&maxWidth=88");
-            }
-
-            return new GroupUserDto
-            {
-                Id = user.Id,
-                Name = user.Username,
-                PrimaryImageTag = dto.PrimaryImageTag,
-                HasPrimaryImage = hasPrimaryImage,
-                ImageUrl = imageUrl
-            };
+            return null;
         }
-        catch
+
+        var dto = _userManager.GetUserDto(user);
+        var hasPrimaryImage = !string.IsNullOrEmpty(dto.PrimaryImageTag);
+
+        string? imageUrl = null;
+        if (hasPrimaryImage && !string.IsNullOrEmpty(dto.PrimaryImageTag))
         {
-            return new GroupUserDto
-            {
-                Id = user.Id,
-                Name = user.Username,
-                HasPrimaryImage = false
-            };
+            imageUrl = string.Create(
+                CultureInfo.InvariantCulture,
+                $"/Users/{user.Id}/Images/Primary?tag={Uri.EscapeDataString(dto.PrimaryImageTag)}&maxHeight={avatarSize}&maxWidth={avatarSize}");
         }
+
+        return new GroupUserDto
+        {
+            Id = user.Id,
+            Name = user.Username,
+            PrimaryImageTag = dto.PrimaryImageTag,
+            HasPrimaryImage = hasPrimaryImage,
+            ImageUrl = imageUrl
+        };
     }
 }

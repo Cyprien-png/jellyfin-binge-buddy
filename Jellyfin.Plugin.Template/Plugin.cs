@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Jellyfin.Plugin.Template.Configuration;
+using Jellyfin.Plugin.Template.Infrastructure;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Jellyfin.Plugin.Template;
 
@@ -47,5 +49,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                 EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.configPage.html", GetType().Namespace)
             }
         ];
+    }
+
+    /// <inheritdoc />
+    public override void OnUninstalling()
+    {
+        var injector = new WebScriptInjector(ApplicationPaths, NullLogger<WebScriptInjector>.Instance);
+        injector.Remove();
+        base.OnUninstalling();
     }
 }

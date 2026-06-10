@@ -1,6 +1,9 @@
+using Jellyfin.Plugin.Template.Abstractions;
+using Jellyfin.Plugin.Template.Infrastructure;
 using Jellyfin.Plugin.Template.Services;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Jellyfin.Plugin.Template;
@@ -13,6 +16,11 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
-        serviceCollection.AddSingleton<UserProfileService>();
+        serviceCollection.AddSingleton<IGroupMembershipService, GroupMembershipService>();
+        serviceCollection.AddSingleton<IUserProfileService, UserProfileService>();
+        serviceCollection.AddSingleton<IItemWatchProgressService, ItemWatchProgressService>();
+        serviceCollection.AddSingleton<IBingeBuddyOverlayService, BingeBuddyOverlayService>();
+        serviceCollection.AddSingleton<WebScriptInjector>();
+        serviceCollection.AddSingleton<IStartupFilter, BingeBuddyScriptInjectorStartup>();
     }
 }

@@ -2,7 +2,7 @@
 name: "Binge Buddy"
 guid: "03b66f74-f14e-4e5c-a123-b71f4da3d6d3"
 version: "1.0.0.0"
-targetAbi: "10.9.0.0"
+targetAbi: "10.11.0.0"
 framework: "net9.0"
 overview: "Watch together with binge-watching groups"
 description: >

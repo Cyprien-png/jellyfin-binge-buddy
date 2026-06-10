@@ -1,0 +1,47 @@
+.cardScalable,
+.cardBox,
+.cardImageContainer,
+div.listItemImage {
+    position: relative;
+}
+
+.bb-watcher-stack {
+    position: absolute;
+    left: 0.45rem;
+    bottom: 0.45rem;
+    display: flex;
+    align-items: center;
+    z-index: 6;
+    pointer-events: none;
+}
+
+.bb-watcher-avatar,
+.bb-watcher-more {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-sizing: border-box;
+    margin-left: -0.55rem;
+    background: rgba(32, 32, 32, 0.92);
+    object-fit: cover;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.bb-watcher-stack > :first-child {
+    margin-left: 0;
+}
+
+.bb-watcher-initial {
+    background: rgba(0, 164, 220, 0.85);
+}
+
+.bb-watcher-more {
+    background: rgba(120, 120, 120, 0.95);
+}

@@ -11,10 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.9.11" >
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.11" >
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Jellyfin.Model" Version="10.9.11">
+    <PackageReference Include="Jellyfin.Model" Version="10.11.11">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
   </ItemGroup>
@@ -28,6 +28,9 @@
   <ItemGroup>
     <None Remove="Configuration\configPage.html" />
     <EmbeddedResource Include="Configuration\configPage.html" />
+    <EmbeddedResource Include="Web\js\plugin.js" />
+    <EmbeddedResource Include="Web\js\overlays.js" />
+    <EmbeddedResource Include="Web\js\overlays.css" />
   </ItemGroup>
 
 </Project>
