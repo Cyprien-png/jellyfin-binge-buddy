@@ -1,0 +1,12 @@
+[
+    {
+      "guid": "03b66f74-f14e-4e5c-a123-b71f4da3d6d3",
+      "name": "Binge Buddy",
+      "description": "See your buddies progress",
+      "overview": "Keep track of your buddies' viewing progress in Jellyfin. Designed to sync up and resume watching together for your next IRL session.",
+      "owner": "cyprien-png",
+      "category": "General",
+      "imageUrl": "https://raw.githubusercontent.com/cyprien-png/jellyfin-binge-buddy/master/thumbnail.png",
+      "versions": []
+    }
+  ]
