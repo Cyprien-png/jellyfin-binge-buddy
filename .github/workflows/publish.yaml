@@ -7,12 +7,190 @@ on:
   workflow_dispatch:
 
 jobs:
-  call:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/publish.yaml@master
-    with:
-      version: ${{ github.event.release.tag_name }}
-      is-unstable: ${{ github.event.release.prerelease }}
-    secrets:
-      deploy-host: ${{ secrets.DEPLOY_HOST }}
-      deploy-user: ${{ secrets.DEPLOY_USER }}
-      deploy-key: ${{ secrets.DEPLOY_KEY }}
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          ref: master
+
+      - name: Extract version from release tag
+        id: version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH REV <<< "$VERSION"
+          REV="${REV:-0}"
+          FULL_VERSION="${MAJOR}.${MINOR}.${PATCH}.${REV}"
+          echo "version=$FULL_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $FULL_VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Update Directory.Build.props version
+        run: |
+          FILE="Directory.Build.props"
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s|<AssemblyVersion>.*</AssemblyVersion>|<AssemblyVersion>${VERSION}</AssemblyVersion>|" "$FILE"
+          sed -i "s|<FileVersion>.*</FileVersion>|<FileVersion>${VERSION}</FileVersion>|" "$FILE"
+          sed -i "s|<Version>.*</Version>|<Version>${VERSION}</Version>|" "$FILE"
+          cat "$FILE"
+
+      - name: Update build.yaml version
+        run: |
+          FILE="build.yaml"
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s|^version: .*|version: \"${VERSION}\"|" "$FILE"
+          cat "$FILE"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish --configuration Release --no-build -o ./publish
+
+      - name: Determine artifacts from build.yaml
+        id: artifacts
+        run: |
+          python3 - <<'EOF'
+          import yaml
+          import os
+
+          with open("build.yaml", "r", encoding="utf-8") as f:
+              build = yaml.safe_load(f)
+
+          artifacts = build["artifacts"]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write("artifacts=" + ",".join(artifacts) + "\n")
+          EOF
+
+      - name: Package zip
+        id: package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          ZIP_NAME="jellyfin-binge-buddy_${VERSION}.zip"
+          mkdir -p ./artifact
+
+          IFS=',' read -ra FILES <<< "${{ steps.artifacts.outputs.artifacts }}"
+          for f in "${FILES[@]}"; do
+            cp "./publish/${f}" ./artifact/
+          done
+
+          cd ./artifact
+          zip -r "../${ZIP_NAME}" .
+          cd ..
+          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Compute checksum
+        id: checksum
+        run: |
+          CHECKSUM=$(md5sum "${{ steps.package.outputs.zip_name }}" | awk '{ print $1 }')
+          echo "checksum=$CHECKSUM" >> "$GITHUB_OUTPUT"
+
+      - name: Update manifest.json from build.yaml
+        run: |
+          python3 - <<'EOF'
+          import json
+          import yaml
+          import os
+          from datetime import datetime, timezone
+
+          checksum = os.environ["CHECKSUM"]
+          zip_name = os.environ["ZIP_NAME"]
+          release_notes = os.environ.get("RELEASE_BODY", "")
+          repo = os.environ["REPO"]
+          owner = os.environ["OWNER"]
+          tag = os.environ["TAG"]
+
+          with open("build.yaml", "r", encoding="utf-8") as f:
+              build = yaml.safe_load(f)
+
+          version = build["version"]
+          guid = build["guid"]
+
+          manifest_path = "manifest.json"
+          try:
+              with open(manifest_path, "r", encoding="utf-8") as f:
+                  manifest = json.load(f)
+          except FileNotFoundError:
+              manifest = []
+
+          plugin_entry = None
+          for entry in manifest:
+              if entry.get("guid") == guid:
+                  plugin_entry = entry
+                  break
+
+          if plugin_entry is None:
+              plugin_entry = {
+                  "guid": guid,
+                  "name": build["name"],
+                  "description": build.get("description", "").strip(),
+                  "overview": build.get("overview", ""),
+                  "owner": build.get("owner", owner),
+                  "category": build.get("category", "General"),
+                  "versions": []
+              }
+              manifest.append(plugin_entry)
+
+          plugin_entry["name"] = build["name"]
+          plugin_entry["description"] = build.get("description", "").strip()
+          plugin_entry["overview"] = build.get("overview", "")
+          plugin_entry["owner"] = build.get("owner", owner)
+          plugin_entry["category"] = build.get("category", "General")
+
+          existing_versions = [v["version"] for v in plugin_entry["versions"]]
+          if version in existing_versions:
+              print(f"Version {version} already exists in manifest, skipping.")
+          else:
+              source_url = f"https://github.com/{owner}/{repo}/releases/download/{tag}/{zip_name}"
+              changelog = build.get("changelog", "").strip() or release_notes
+
+              new_version = {
+                  "version": version,
+                  "changelog": changelog,
+                  "targetAbi": build["targetAbi"],
+                  "sourceUrl": source_url,
+                  "checksum": checksum,
+                  "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+              }
+              plugin_entry["versions"].insert(0, new_version)
+
+              with open(manifest_path, "w", encoding="utf-8") as f:
+                  json.dump(manifest, f, indent=2, ensure_ascii=False)
+                  f.write("\n")
+              print(f"Added version {version} to manifest.json")
+          EOF
+        env:
+          CHECKSUM: ${{ steps.checksum.outputs.checksum }}
+          ZIP_NAME: ${{ steps.package.outputs.zip_name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          REPO: jellyfin-binge-buddy
+          OWNER: Cyprien-png
+          TAG: ${{ steps.version.outputs.tag }}
+
+      - name: Commit version bump and manifest.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifest.json Directory.Build.props build.yaml
+          git diff --staged --quiet || git commit -m "chore: release ${{ steps.version.outputs.tag }}"
+          git push origin HEAD:master
+
+      - name: Upload zip to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: ${{ steps.package.outputs.zip_name }}
