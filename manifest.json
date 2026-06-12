@@ -7,6 +7,7 @@
       "owner": "cyprien-png",
       "category": "General",
       "imageUrl": "https://raw.githubusercontent.com/cyprien-png/jellyfin-binge-buddy/master/thumbnail.png",
+      "assemblies": ["Jellyfin.Plugin.BingeBuddy.dll"],
       "versions": []
     }
   ]
