@@ -1,6 +1,6 @@
 using System;
 
-namespace Jellyfin.Plugin.Template.Api;
+namespace Jellyfin.Plugin.BingeBuddy.Api;
 
 /// <summary>
 /// User entry for the group settings member picker.

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.Template.Infrastructure;
+namespace Jellyfin.Plugin.BingeBuddy.Infrastructure;
 
 /// <summary>
 /// Injects the Binge Buddy client script into index.html responses at request time.

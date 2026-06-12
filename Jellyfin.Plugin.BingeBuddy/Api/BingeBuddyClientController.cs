@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Jellyfin.Plugin.Template.Abstractions;
-using Jellyfin.Plugin.Template.Api;
+using Jellyfin.Plugin.BingeBuddy.Abstractions;
+using Jellyfin.Plugin.BingeBuddy.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.Template.Api;
+namespace Jellyfin.Plugin.BingeBuddy.Api;
 
 /// <summary>
 /// Client-facing API endpoints and static assets for Binge Buddy overlays.

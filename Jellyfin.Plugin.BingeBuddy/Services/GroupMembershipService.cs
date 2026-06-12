@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Jellyfin.Plugin.Template.Abstractions;
+using Jellyfin.Plugin.BingeBuddy.Abstractions;
 
-namespace Jellyfin.Plugin.Template.Services;
+namespace Jellyfin.Plugin.BingeBuddy.Services;
 
 /// <summary>
 /// Resolves visible group members from plugin configuration.

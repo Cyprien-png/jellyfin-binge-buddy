@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Jellyfin.Plugin.Template.Configuration;
+namespace Jellyfin.Plugin.BingeBuddy.Configuration;
 
 /// <summary>
 /// A binge-watching group with a name and selected members.

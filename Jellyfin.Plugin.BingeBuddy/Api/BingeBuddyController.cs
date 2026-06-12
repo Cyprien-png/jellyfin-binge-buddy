@@ -1,11 +1,11 @@
 using System.Collections.Generic;
-using Jellyfin.Plugin.Template.Abstractions;
+using Jellyfin.Plugin.BingeBuddy.Abstractions;
 using MediaBrowser.Common.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Jellyfin.Plugin.Template.Api;
+namespace Jellyfin.Plugin.BingeBuddy.Api;
 
 /// <summary>
 /// API endpoints for Binge Buddy plugin settings.

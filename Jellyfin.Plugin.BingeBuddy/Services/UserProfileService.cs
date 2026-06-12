@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using Jellyfin.Plugin.Template.Abstractions;
-using Jellyfin.Plugin.Template.Api;
+using Jellyfin.Plugin.BingeBuddy.Abstractions;
+using Jellyfin.Plugin.BingeBuddy.Api;
 using MediaBrowser.Controller.Library;
 
-namespace Jellyfin.Plugin.Template.Services;
+namespace Jellyfin.Plugin.BingeBuddy.Services;
 
 /// <summary>
 /// Resolves Jellyfin users and profile images for the plugin.

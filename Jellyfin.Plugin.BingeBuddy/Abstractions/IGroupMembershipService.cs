@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Jellyfin.Plugin.Template.Abstractions;
+namespace Jellyfin.Plugin.BingeBuddy.Abstractions;
 
 /// <summary>
 /// Resolves group membership for binge-watching groups.

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 using MediaBrowser.Common.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Jellyfin.Plugin.Template.Infrastructure;
+namespace Jellyfin.Plugin.BingeBuddy.Infrastructure;
 
 /// <summary>
 /// Injects the Binge Buddy client script into the Jellyfin web index page.

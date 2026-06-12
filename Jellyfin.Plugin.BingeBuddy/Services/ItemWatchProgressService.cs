@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using Jellyfin.Database.Implementations;
 using Jellyfin.Database.Implementations.Entities;
-using Jellyfin.Plugin.Template.Abstractions;
-using Jellyfin.Plugin.Template.Api;
+using Jellyfin.Plugin.BingeBuddy.Abstractions;
+using Jellyfin.Plugin.BingeBuddy.Api;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using Microsoft.EntityFrameworkCore;
 
-namespace Jellyfin.Plugin.Template.Services;
+namespace Jellyfin.Plugin.BingeBuddy.Services;
 
 /// <summary>
 /// Resolves group members who have started watching media items.

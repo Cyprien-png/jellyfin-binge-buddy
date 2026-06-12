@@ -2,7 +2,7 @@ using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 
-namespace Jellyfin.Plugin.Template.Infrastructure;
+namespace Jellyfin.Plugin.BingeBuddy.Infrastructure;
 
 /// <summary>
 /// Registers the Binge Buddy script injector middleware in the ASP.NET pipeline.

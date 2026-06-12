@@ -1,15 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Jellyfin.Plugin.Template.Configuration;
-using Jellyfin.Plugin.Template.Infrastructure;
+using Jellyfin.Plugin.BingeBuddy.Configuration;
+using Jellyfin.Plugin.BingeBuddy.Infrastructure;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Jellyfin.Plugin.Template;
+namespace Jellyfin.Plugin.BingeBuddy;
 
 /// <summary>
 /// The main plugin.

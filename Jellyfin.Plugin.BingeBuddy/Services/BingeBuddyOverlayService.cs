@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Jellyfin.Plugin.Template.Abstractions;
-using Jellyfin.Plugin.Template.Api;
+using Jellyfin.Plugin.BingeBuddy.Abstractions;
+using Jellyfin.Plugin.BingeBuddy.Api;
 
-namespace Jellyfin.Plugin.Template.Services;
+namespace Jellyfin.Plugin.BingeBuddy.Services;
 
 /// <summary>
 /// Builds overlay data for the web client.

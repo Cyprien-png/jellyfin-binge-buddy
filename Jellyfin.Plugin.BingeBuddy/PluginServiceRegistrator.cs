@@ -1,12 +1,12 @@
-using Jellyfin.Plugin.Template.Abstractions;
-using Jellyfin.Plugin.Template.Infrastructure;
-using Jellyfin.Plugin.Template.Services;
+using Jellyfin.Plugin.BingeBuddy.Abstractions;
+using Jellyfin.Plugin.BingeBuddy.Infrastructure;
+using Jellyfin.Plugin.BingeBuddy.Services;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Jellyfin.Plugin.Template;
+namespace Jellyfin.Plugin.BingeBuddy;
 
 /// <summary>
 /// Registers Binge Buddy services with the Jellyfin DI container.
