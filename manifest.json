@@ -1,13 +1,22 @@
 [
-    {
-      "guid": "03b66f74-f14e-4e5c-a123-b71f4da3d6d3",
-      "name": "Binge Buddy",
-      "description": "See your buddies progress",
-      "overview": "Keep track of your buddies' viewing progress in Jellyfin. Designed to sync up and resume watching together for your next IRL session.",
-      "owner": "cyprien-png",
-      "category": "General",
-      "imageUrl": "https://raw.githubusercontent.com/cyprien-png/jellyfin-binge-buddy/master/thumbnail.png",
-      "assemblies": ["Jellyfin.Plugin.BingeBuddy.dll"],
-      "versions": []
-    }
-  ]
+  {
+    "guid": "03b66f74-f14e-4e5c-a123-b71f4da3d6d3",
+    "name": "Binge Buddy",
+    "description": "Keep track of your buddies' viewing progress in Jellyfin. Designed to sync up and resume watching together for your next IRL session.",
+    "overview": "See your buddies progress",
+    "owner": "Cyprien-png",
+    "category": "General",
+    "imageUrl": "https://raw.githubusercontent.com/cyprien-png/jellyfin-binge-buddy/master/thumbnail.png",
+    "assemblies": ["Jellyfin.Plugin.BingeBuddy.dll"],
+    "versions": [
+      {
+        "version": "0.1.0.0",
+        "changelog": "Initial release with group management in plugin settings.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Cyprien-png/jellyfin-binge-buddy/releases/download/v0.1.0/jellyfin-binge-buddy_0.1.0.0.zip",
+        "checksum": "5d2823666ad83c19eba252963e0777b3",
+        "timestamp": "2026-06-12T19:26:00Z"
+      }
+    ]
+  }
+]
