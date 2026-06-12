@@ -1,5 +1,7 @@
 <h1 align="center">Jellyfin Binge Buddy</h1>
 
+![Binge Buddy](https://raw.githubusercontent.com/cyprien-png/jellyfin-binge-buddy/master/thumbnail.png)
+
 ## About
 
 **Binge Buddy** helps household and friend groups see what everyone has already started watching on your Jellyfin server. An admin creates **binge-watching groups**, picks which Jellyfin users belong to each group, and the web client shows small avatar stacks on movie and episode posters so you can spot shared progress at a glance.
