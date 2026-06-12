@@ -7,8 +7,18 @@
     "owner": "Cyprien-png",
     "category": "General",
     "imageUrl": "https://raw.githubusercontent.com/cyprien-png/jellyfin-binge-buddy/master/thumbnail.png",
-    "assemblies": ["Jellyfin.Plugin.BingeBuddy.dll"],
+    "assemblies": [
+      "Jellyfin.Plugin.BingeBuddy.dll"
+    ],
     "versions": [
+      {
+        "version": "0.1.1.0",
+        "changelog": "Initial release with group management in plugin settings.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Cyprien-png/jellyfin-binge-buddy/releases/download/v0.1.1/jellyfin-binge-buddy_0.1.1.0.zip",
+        "checksum": "e131eb8b39317e1f00787f9abffb688e",
+        "timestamp": "2026-06-12T20:08:59Z"
+      },
       {
         "version": "0.1.0.0",
         "changelog": "Initial release with group management in plugin settings.",
