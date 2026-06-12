@@ -8,6 +8,21 @@
 
 Use it to plan the next watch session: open a library, see who has already begun a title, and pick up together without guessing where everyone left off.
 
+## Requirements
+
+- Jellyfin **10.11.11** or later (plugin ABI `10.11.11.0`)
+- Administrative access to configure groups
+- Jellyfin **web client** for poster overlays
+
+## Installation
+
+1. Open **Dashboard → Plugins → Manage Repositories** and add a new one:
+   - Name: `Binge Buddy`
+   - URL: `https://raw.githubusercontent.com/Cyprien-png/jellyfin-binge-buddy/master/manifest.json`
+2. Go back to **Dashboard → Plugins** and filter "All".
+3. Binge Buddy must be listed. You are now able to install it.
+4. After installation you must restart the server to enable the plugin (**Dashboard → Restart**).
+
 ## How It Works
 
 ### Groups
@@ -48,24 +63,6 @@ The overlay feature requires the **web UI**. Other Jellyfin clients (mobile apps
 - Pick members with checkboxes and profile avatars
 - Avatar stacks on movie and episode posters in the web client
 - Progress based on each user’s Jellyfin watch state (retroactive)
-
-## Requirements
-
-- Jellyfin **10.11.x** (plugin ABI `10.11.0.0`)
-- Administrative access to configure groups
-- Jellyfin **web client** for poster overlays
-
-## Installation
-
-[See the official documentation for install instructions](https://jellyfin.org/docs/general/server/plugins/index.html#installing).
-
-1. Build or download `Jellyfin.Plugin.Template.dll` (see **Build** below).
-2. Place the DLL in a subfolder under your Jellyfin plugins directory, for example:
-   ```text
-   <Jellyfin-Data-Directory>/plugins/BingeBuddy/Jellyfin.Plugin.Template.dll
-   ```
-3. Restart the Jellyfin server.
-4. Open **Dashboard → Plugins** and confirm **Binge Buddy** is listed and active.
 
 ## Configuration
 
@@ -122,3 +119,5 @@ Refer to the [Jellyfin contributing guidelines](https://github.com/jellyfin/.git
 ## License
 
 This plugin is licensed under the **GNU General Public License v3.0**. See [LICENSE](./LICENSE) for the full text.
+
+![That way I'll know you stopped by](https://ws.jaquier.dev/load?app=bingebuddy-repo)
