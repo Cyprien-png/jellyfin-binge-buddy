@@ -64,4 +64,25 @@ public class UserProfileService : IUserProfileService
             ImageUrl = imageUrl
         };
     }
+
+    /// <inheritdoc />
+    public GroupWatcherDto? MapWatcher(Guid userId, bool played, long playbackPositionTicks, int avatarSize = 88)
+    {
+        var user = MapUser(userId, avatarSize);
+        if (user is null)
+        {
+            return null;
+        }
+
+        return new GroupWatcherDto
+        {
+            Id = user.Id,
+            Name = user.Name,
+            PrimaryImageTag = user.PrimaryImageTag,
+            HasPrimaryImage = user.HasPrimaryImage,
+            ImageUrl = user.ImageUrl,
+            Played = played,
+            PlaybackPositionTicks = playbackPositionTicks
+        };
+    }
 }

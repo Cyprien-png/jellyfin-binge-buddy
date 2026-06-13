@@ -78,7 +78,7 @@ public class BingeBuddyClientController : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public ActionResult<IReadOnlyDictionary<string, IReadOnlyList<GroupUserDto>>> GetOverlays([FromQuery] Guid[] itemIds)
+    public ActionResult<IReadOnlyDictionary<string, IReadOnlyList<GroupWatcherDto>>> GetOverlays([FromQuery] Guid[] itemIds)
     {
         var userId = GetAuthenticatedUserId();
         if (userId == Guid.Empty)

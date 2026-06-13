@@ -22,4 +22,14 @@ public interface IUserProfileService
     /// <param name="avatarSize">The avatar size in pixels.</param>
     /// <returns>The mapped DTO, if the user exists.</returns>
     GroupUserDto? MapUser(Guid userId, int avatarSize = 88);
+
+    /// <summary>
+    /// Maps a Jellyfin user and watch progress to a watcher DTO.
+    /// </summary>
+    /// <param name="userId">The Jellyfin user identifier.</param>
+    /// <param name="played">Whether the user marked the item as played.</param>
+    /// <param name="playbackPositionTicks">The saved playback position in Jellyfin ticks.</param>
+    /// <param name="avatarSize">The avatar size in pixels.</param>
+    /// <returns>The mapped DTO, if the user exists.</returns>
+    GroupWatcherDto? MapWatcher(Guid userId, bool played, long playbackPositionTicks, int avatarSize = 88);
 }

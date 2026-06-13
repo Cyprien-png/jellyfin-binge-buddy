@@ -25,11 +25,11 @@ public class BingeBuddyOverlayService : IBingeBuddyOverlayService
     }
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<Guid, IReadOnlyList<GroupUserDto>> GetOverlaysForUser(Guid userId, IReadOnlyList<Guid> itemIds)
+    public IReadOnlyDictionary<Guid, IReadOnlyList<GroupWatcherDto>> GetOverlaysForUser(Guid userId, IReadOnlyList<Guid> itemIds)
     {
         if (itemIds.Count == 0 || userId == Guid.Empty)
         {
-            return new Dictionary<Guid, IReadOnlyList<GroupUserDto>>();
+            return new Dictionary<Guid, IReadOnlyList<GroupWatcherDto>>();
         }
 
         var limitedItemIds = itemIds.Count <= MaxItemsPerRequest

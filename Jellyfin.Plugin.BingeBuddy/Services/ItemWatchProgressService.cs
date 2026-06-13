@@ -45,11 +45,11 @@ public class ItemWatchProgressService : IItemWatchProgressService
     }
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<Guid, IReadOnlyList<GroupUserDto>> GetWatchersForItems(
+    public IReadOnlyDictionary<Guid, IReadOnlyList<GroupWatcherDto>> GetWatchersForItems(
         Guid currentUserId,
         IReadOnlyList<Guid> itemIds)
     {
-        var result = new Dictionary<Guid, IReadOnlyList<GroupUserDto>>();
+        var result = new Dictionary<Guid, IReadOnlyList<GroupWatcherDto>>();
         if (itemIds.Count == 0)
         {
             return result;
@@ -60,7 +60,7 @@ public class ItemWatchProgressService : IItemWatchProgressService
         {
             foreach (var itemId in itemIds.Distinct())
             {
-                result[itemId] = Array.Empty<GroupUserDto>();
+                result[itemId] = Array.Empty<GroupWatcherDto>();
             }
 
             return result;
@@ -73,7 +73,7 @@ public class ItemWatchProgressService : IItemWatchProgressService
 
         foreach (var unsupportedItemId in distinctItemIds.Except(supportedItemIds))
         {
-            result[unsupportedItemId] = Array.Empty<GroupUserDto>();
+            result[unsupportedItemId] = Array.Empty<GroupWatcherDto>();
         }
 
         if (supportedItemIds.Count == 0)
@@ -81,13 +81,17 @@ public class ItemWatchProgressService : IItemWatchProgressService
             return result;
         }
 
-        var startedMembersByItem = LoadStartedMembersByItem(supportedItemIds, visibleMemberIds);
+        var watcherProgressByItem = LoadWatcherProgressByItem(supportedItemIds, visibleMemberIds);
 
         foreach (var itemId in supportedItemIds)
         {
-            var startedMemberIds = startedMembersByItem.GetValueOrDefault(itemId) ?? Array.Empty<Guid>();
-            var watchers = startedMemberIds
-                .Select(memberId => _userProfileService.MapUser(memberId, OverlayAvatarSize))
+            var watcherProgress = watcherProgressByItem.GetValueOrDefault(itemId) ?? Array.Empty<MemberWatchProgress>();
+            var watchers = watcherProgress
+                .Select(progress => _userProfileService.MapWatcher(
+                    progress.UserId,
+                    progress.Played,
+                    progress.PlaybackPositionTicks,
+                    OverlayAvatarSize))
                 .Where(watcher => watcher is not null)
                 .Select(watcher => watcher!)
                 .OrderBy(watcher => watcher.Name, StringComparer.OrdinalIgnoreCase)
@@ -99,7 +103,7 @@ public class ItemWatchProgressService : IItemWatchProgressService
         return result;
     }
 
-    private Dictionary<Guid, IReadOnlyList<Guid>> LoadStartedMembersByItem(
+    private Dictionary<Guid, IReadOnlyList<MemberWatchProgress>> LoadWatcherProgressByItem(
         IReadOnlyList<Guid> itemIds,
         IReadOnlyList<Guid> memberIds)
     {
@@ -110,7 +114,7 @@ public class ItemWatchProgressService : IItemWatchProgressService
             .Where(userData => itemIds.Contains(userData.ItemId) && memberIds.Contains(userData.UserId))
             .ToList();
 
-        var startedMembersByItem = itemIds.ToDictionary(itemId => itemId, _ => new HashSet<Guid>());
+        var progressByItem = itemIds.ToDictionary(itemId => itemId, _ => new Dictionary<Guid, MemberWatchProgress>());
 
         foreach (var row in rows)
         {
@@ -119,15 +123,22 @@ public class ItemWatchProgressService : IItemWatchProgressService
                 continue;
             }
 
-            if (startedMembersByItem.TryGetValue(row.ItemId, out var memberSet))
+            if (!progressByItem.TryGetValue(row.ItemId, out var progressByUser))
             {
-                memberSet.Add(row.UserId);
+                continue;
             }
+
+            progressByUser[row.UserId] = new MemberWatchProgress(
+                row.UserId,
+                row.Played,
+                row.PlaybackPositionTicks);
         }
 
-        return startedMembersByItem.ToDictionary(
+        return progressByItem.ToDictionary(
             entry => entry.Key,
-            entry => (IReadOnlyList<Guid>)entry.Value.OrderBy(id => id).ToList());
+            entry => (IReadOnlyList<MemberWatchProgress>)entry.Value.Values
+                .OrderBy(progress => progress.UserId)
+                .ToList());
     }
 
     private bool TryGetSupportedItem(Guid itemId, Guid currentUserId, out BaseItem item)
@@ -165,4 +176,6 @@ public class ItemWatchProgressService : IItemWatchProgressService
             || userData.PlaybackPositionTicks > 0
             || userData.LastPlayedDate.HasValue;
     }
+
+    private sealed record MemberWatchProgress(Guid UserId, bool Played, long PlaybackPositionTicks);
 }

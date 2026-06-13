@@ -15,7 +15,7 @@ public interface IItemWatchProgressService
     /// <param name="currentUserId">The authenticated user identifier.</param>
     /// <param name="itemIds">The media item identifiers.</param>
     /// <returns>Watchers keyed by item identifier.</returns>
-    IReadOnlyDictionary<Guid, IReadOnlyList<GroupUserDto>> GetWatchersForItems(
+    IReadOnlyDictionary<Guid, IReadOnlyList<GroupWatcherDto>> GetWatchersForItems(
         Guid currentUserId,
         IReadOnlyList<Guid> itemIds);
 }
