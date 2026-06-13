@@ -76,6 +76,7 @@ The overlay feature requires the **web UI**. Other Jellyfin clients (mobile apps
    - Check the Jellyfin users who should be in the group.
    - Click **Save members**.
 5. Repeat for any other groups you need.
+6. If the avatars are not showing up on the posters, just reload the page _ctrl + F5_ because the plugin injects the UI components on rendering. 
 
 Each server user who should see overlays must be included in at least one group with the people they watch with. Users who are not in any group with you will not appear on your posters, and you will not appear on theirs.
 
