@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    var BOOTSTRAP_FLAG = '__bingeBuddyBootstrapped';
+    let BOOTSTRAP_FLAG = '__bingeBuddyBootstrapped';
 
     if (window[BOOTSTRAP_FLAG]) {
         return;
@@ -13,8 +13,8 @@
             return;
         }
 
-        var attempts = 0;
-        var timer = setInterval(function () {
+        let attempts = 0;
+        let timer = setInterval(function () {
             if (typeof ApiClient !== 'undefined') {
                 clearInterval(timer);
                 callback();
@@ -32,7 +32,7 @@
             return;
         }
 
-        var link = document.createElement('link');
+        let link = document.createElement('link');
         link.id = 'binge-buddy-overlay-styles';
         link.rel = 'stylesheet';
         link.href = ApiClient.getUrl('BingeBuddy/js/overlays.css');
@@ -46,10 +46,9 @@
 
         loadStylesheet();
 
-        var script = document.createElement('script');
+        let script = document.createElement('script');
         script.id = 'binge-buddy-overlay-script';
         script.src = ApiClient.getUrl('BingeBuddy/js/overlays.js');
-        script.defer = true;
         document.head.appendChild(script);
     }
 

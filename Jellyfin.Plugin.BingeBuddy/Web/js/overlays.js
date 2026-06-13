@@ -5,12 +5,21 @@
         return;
     }
 
-    var CARD_SELECTOR = 'a.cardImageContainer.cardContent, div.listItemImage';
-    var OVERLAY_CLASS = 'bb-watcher-stack';
-    var pendingItemIds = new Set();
-    var overlayCache = new Map();
-    var fetchTimer = null;
-    var observer = null;
+    let CARD_SELECTOR = 'a.cardImageContainer.cardContent, div.listItemImage';
+    let DETAIL_SECTION_SELECTOR = '.detailSection';
+    let DETAIL_MOUNT_SELECTOR = '.detailPagePrimaryContent';
+    let OVERLAY_CLASS = 'bb-watcher-stack';
+    let DETAIL_BUDDIES_CLASS = 'bb-detail-buddies';
+    let DETAIL_MOUNT_DATA_ATTR = 'bbDetailBuddiesItemId';
+    let TICKS_PER_SECOND = 10000000;
+    let DETAIL_RETRY_MS = 150;
+    let DETAIL_RETRY_MAX = 40;
+    let pendingItemIds = new Set();
+    let overlayCache = new Map();
+    let fetchTimer = null;
+    let detailRetryTimer = null;
+    let detailScanTimer = null;
+    let observer = null;
 
     function normalizeGuid(value) {
         return (value || '').toString().replace(/-/g, '').toLowerCase();
@@ -21,22 +30,22 @@
     }
 
     function extractItemId(element) {
-        var card = findCardRoot(element);
+        let card = findCardRoot(element);
         if (card && card.dataset && card.dataset.id) {
             return card.dataset.id;
         }
 
-        var link = element.closest('a[href*="id="]');
+        let link = element.closest('a[href*="id="]');
         if (link && link.href) {
-            var match = link.href.match(/[?&]id=([a-f0-9-]{32,36})/i);
+            let match = link.href.match(/[?&]id=([a-f0-9-]{32,36})/i);
             if (match) {
                 return match[1];
             }
         }
 
-        var image = element.querySelector('img[data-src], img[src]') || element;
-        var source = image.getAttribute('data-src') || image.getAttribute('src') || '';
-        var imageMatch = source.match(/\/Items\/([a-f0-9-]{32,36})\//i);
+        let image = element.querySelector('img[data-src], img[src]') || element;
+        let source = image.getAttribute('data-src') || image.getAttribute('src') || '';
+        let imageMatch = source.match(/\/Items\/([a-f0-9-]{32,36})\//i);
         if (imageMatch) {
             return imageMatch[1];
         }
@@ -61,12 +70,12 @@
     }
 
     function getInitial(name) {
-        var trimmed = (name || '').trim();
+        let trimmed = (name || '').trim();
         return trimmed ? trimmed.charAt(0).toUpperCase() : '?';
     }
 
     function removeExistingOverlay(mount) {
-        var existing = mount.querySelector('.' + OVERLAY_CLASS);
+        let existing = mount.querySelector('.' + OVERLAY_CLASS);
         if (existing) {
             existing.remove();
         }
@@ -79,16 +88,16 @@
             return;
         }
 
-        var stack = document.createElement('div');
+        let stack = document.createElement('div');
         stack.className = OVERLAY_CLASS;
 
-        var visibleWatchers = watchers.slice(0, 3);
+        let visibleWatchers = watchers.slice(0, 3);
         visibleWatchers.forEach(function (watcher, index) {
-            var name = watcher.Name || watcher.name || '';
-            var imageUrl = resolveImageUrl(watcher.ImageUrl || watcher.imageUrl);
+            let name = watcher.Name || watcher.name || '';
+            let imageUrl = resolveImageUrl(watcher.ImageUrl || watcher.imageUrl);
 
             if (imageUrl) {
-                var img = document.createElement('img');
+                let img = document.createElement('img');
                 img.className = 'bb-watcher-avatar';
                 img.alt = name;
                 img.title = name;
@@ -104,7 +113,7 @@
         });
 
         if (watchers.length > 3) {
-            var more = document.createElement('span');
+            let more = document.createElement('span');
             more.count = watchers.length - 3;
             more.className = 'bb-watcher-more';
             more.textContent = more.count > 99 ? '99+' : '+' + more.count;
@@ -119,12 +128,485 @@
     }
 
     function createInitialAvatar(name, index) {
-        var avatar = document.createElement('span');
+        let avatar = document.createElement('span');
         avatar.className = 'bb-watcher-avatar bb-watcher-initial';
         avatar.textContent = getInitial(name);
         avatar.title = name;
         avatar.style.zIndex = String(index + 1);
         return avatar;
+    }
+
+    function getDetailsItemIdFromHash() {
+        let hash = window.location.hash || '';
+        if (hash.indexOf('/details') === -1) {
+            return null;
+        }
+
+        let match = hash.match(/[?&]id=([a-f0-9-]{32,36})/i);
+        return match ? match[1] : null;
+    }
+
+    function parseWatchProgress(raw) {
+        if (!raw) {
+            return {
+                played: false,
+                playbackPositionTicks: 0,
+                episodeIndexNumber: null,
+                episodeRunTimeTicks: 0
+            };
+        }
+
+        let episodeIndexNumber = raw.episodeIndexNumber ?? raw.EpisodeIndexNumber;
+
+        return {
+            played: !!(raw.played || raw.Played),
+            playbackPositionTicks: Number(raw.playbackPositionTicks || raw.PlaybackPositionTicks || 0),
+            episodeIndexNumber: episodeIndexNumber === undefined || episodeIndexNumber === null
+                ? null
+                : Number(episodeIndexNumber),
+            episodeRunTimeTicks: Number(raw.episodeRunTimeTicks || raw.EpisodeRunTimeTicks || 0)
+        };
+    }
+
+    function parseWatcher(raw) {
+        let progress = parseWatchProgress(raw);
+
+        return {
+            Name: raw.Name || raw.name || '',
+            name: raw.Name || raw.name || '',
+            ImageUrl: raw.ImageUrl || raw.imageUrl || '',
+            imageUrl: raw.ImageUrl || raw.imageUrl || '',
+            played: progress.played,
+            playbackPositionTicks: progress.playbackPositionTicks,
+            episodeIndexNumber: progress.episodeIndexNumber,
+            episodeRunTimeTicks: progress.episodeRunTimeTicks
+        };
+    }
+
+    function parseItemOverlay(raw) {
+        if (!raw) {
+            return {
+                watchers: [],
+                runTimeTicks: 0,
+                isSeason: false,
+                currentUser: parseWatchProgress(null)
+            };
+        }
+
+        if (Array.isArray(raw)) {
+            return {
+                watchers: raw.map(parseWatcher),
+                runTimeTicks: 0,
+                isSeason: false,
+                currentUser: parseWatchProgress(null)
+            };
+        }
+
+        return {
+            watchers: (raw.watchers || raw.Watchers || []).map(parseWatcher),
+            runTimeTicks: Number(raw.runTimeTicks || raw.RunTimeTicks || 0),
+            isSeason: !!(raw.isSeason || raw.IsSeason),
+            currentUser: parseWatchProgress(raw.currentUser || raw.CurrentUser)
+        };
+    }
+
+    function getProgressRuntime(progress, fallbackRunTimeTicks) {
+        if (progress && progress.episodeRunTimeTicks > 0) {
+            return progress.episodeRunTimeTicks;
+        }
+
+        return fallbackRunTimeTicks || 0;
+    }
+
+    function getProgressPercent(played, playbackPositionTicks, runTimeTicks) {
+        if (played) {
+            return 100;
+        }
+
+        if (!runTimeTicks || runTimeTicks <= 0) {
+            return 0;
+        }
+
+        return Math.min(100, Math.round((playbackPositionTicks / runTimeTicks) * 100));
+    }
+
+    function formatWatchedDuration(playbackPositionTicks) {
+        let totalSeconds = Math.max(0, Math.floor(playbackPositionTicks / TICKS_PER_SECOND));
+        let hours = Math.floor(totalSeconds / 3600);
+        let minutes = Math.floor((totalSeconds % 3600) / 60);
+        let seconds = totalSeconds % 60;
+
+        if (hours >= 1) {
+            return hours + 'h ' + minutes + 'm ' + seconds + 's';
+        }
+
+        return minutes + 'm ' + seconds + 's';
+    }
+
+    function formatProgressStatus(played, playbackPositionTicks, runTimeTicks) {
+        if (played) {
+            return 'Finished';
+        }
+
+        let watched = formatWatchedDuration(playbackPositionTicks);
+        let percent = getProgressPercent(false, playbackPositionTicks, runTimeTicks);
+        return watched + ' watched (' + percent + '%)';
+    }
+
+    function createProgressRow(labelText, progress, runTimeTicks, variant, options) {
+        options = options || {};
+        let episodeIndexNumber = options.episodeIndexNumber;
+        let showEpisodeLine = options.showEpisodeLine;
+
+        let row = document.createElement('div');
+        row.className = 'bb-detail-progress-row';
+
+        let meta = document.createElement('div');
+        meta.className = 'bb-detail-progress-meta';
+
+        let label = document.createElement('span');
+        label.className = 'bb-detail-progress-label';
+        label.textContent = labelText;
+
+        let status = document.createElement('span');
+        status.className = 'bb-detail-progress-status';
+        status.textContent = formatProgressStatus(
+            progress.played,
+            progress.playbackPositionTicks,
+            runTimeTicks
+        );
+
+        meta.appendChild(label);
+        meta.appendChild(status);
+        row.appendChild(meta);
+
+        if (showEpisodeLine && episodeIndexNumber !== null && episodeIndexNumber !== undefined) {
+            let episodeLine = document.createElement('div');
+            episodeLine.className = 'bb-detail-progress-episode';
+            episodeLine.textContent = 'Episode ' + episodeIndexNumber;
+            row.appendChild(episodeLine);
+        }
+
+        let track = document.createElement('div');
+        track.className = 'bb-detail-progress-track';
+
+        let fill = document.createElement('div');
+        fill.className = 'bb-detail-progress-fill bb-detail-progress-fill-' + variant;
+        fill.style.width = getProgressPercent(
+            progress.played,
+            progress.playbackPositionTicks,
+            runTimeTicks
+        ) + '%';
+
+        track.appendChild(fill);
+        row.appendChild(track);
+
+        return row;
+    }
+
+    function createDetailProgressSection(currentUser, watcher, overlay) {
+        let section = document.createElement('div');
+        section.className = 'bb-detail-progress';
+
+        let heading = document.createElement('div');
+        heading.className = 'bb-detail-progress-heading';
+        heading.textContent = 'Progress';
+        section.appendChild(heading);
+
+        let isSeason = overlay.isSeason;
+        let youRuntime = isSeason
+            ? getProgressRuntime(currentUser, 0)
+            : overlay.runTimeTicks;
+        let themRuntime = isSeason
+            ? getProgressRuntime(watcher, 0)
+            : overlay.runTimeTicks;
+
+        section.appendChild(createProgressRow('You', currentUser, youRuntime, 'you', {
+            showEpisodeLine: isSeason,
+            episodeIndexNumber: isSeason ? currentUser.episodeIndexNumber : null
+        }));
+        section.appendChild(createProgressRow('Them', watcher, themRuntime, 'them', {
+            showEpisodeLine: isSeason,
+            episodeIndexNumber: isSeason ? watcher.episodeIndexNumber : null
+        }));
+
+        return section;
+    }
+
+    function getItemOverlayFromResponse(response, itemId) {
+        if (!response) {
+            return parseItemOverlay(null);
+        }
+
+        return parseItemOverlay(response[normalizeGuid(itemId)] || response[itemId]);
+    }
+
+    function removeDetailBuddiesFromMount(mountPoint) {
+        if (!mountPoint) {
+            return;
+        }
+
+        mountPoint.querySelectorAll('.' + DETAIL_BUDDIES_CLASS).forEach(function (element) {
+            element.remove();
+        });
+    }
+
+    function clearAllDetailBuddiesState() {
+        document.querySelectorAll('.' + DETAIL_BUDDIES_CLASS).forEach(function (element) {
+            element.remove();
+        });
+
+        document.querySelectorAll('[data-bb-detail-buddies-item-id]').forEach(function (element) {
+            delete element.dataset[DETAIL_MOUNT_DATA_ATTR];
+        });
+    }
+
+    function isElementVisible(element) {
+        if (!element) {
+            return false;
+        }
+
+        if (element.offsetParent !== null) {
+            return true;
+        }
+
+        return element.getClientRects().length > 0;
+    }
+
+    function findDetailMountPoint() {
+        let visiblePage = document.querySelector('.page:not(.hide)');
+        let candidates = [];
+
+        if (visiblePage) {
+            candidates = candidates.concat(Array.from(visiblePage.querySelectorAll(DETAIL_MOUNT_SELECTOR)));
+            candidates = candidates.concat(Array.from(visiblePage.querySelectorAll(DETAIL_SECTION_SELECTOR)));
+        }
+
+        candidates = candidates.concat(Array.from(document.querySelectorAll(DETAIL_MOUNT_SELECTOR)));
+        candidates = candidates.concat(Array.from(document.querySelectorAll(DETAIL_SECTION_SELECTOR)));
+
+        for (let i = 0; i < candidates.length; i++) {
+            if (isElementVisible(candidates[i])) {
+                return candidates[i];
+            }
+        }
+
+        return candidates.length ? candidates[candidates.length - 1] : null;
+    }
+
+    function getDetailInsertAnchor(mountPoint) {
+        if (!mountPoint) {
+            return null;
+        }
+
+        if (mountPoint.matches(DETAIL_MOUNT_SELECTOR)) {
+            return mountPoint.querySelector(DETAIL_SECTION_SELECTOR) || mountPoint.firstChild;
+        }
+
+        return mountPoint.firstChild;
+    }
+
+    function isDetailBuddiesMounted(mountPoint, itemId) {
+        if (!mountPoint) {
+            return false;
+        }
+
+        return mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR] === itemId
+            && !!mountPoint.querySelector('.' + DETAIL_BUDDIES_CLASS);
+    }
+
+    function clearDetailBuddiesMountState(mountPoint) {
+        if (!mountPoint) {
+            return;
+        }
+
+        delete mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR];
+        removeDetailBuddiesFromMount(mountPoint);
+    }
+
+    function createDetailInitialAvatar(name) {
+        let avatar = document.createElement('span');
+        avatar.className = 'bb-detail-buddy-avatar bb-detail-buddy-initial';
+        avatar.textContent = getInitial(name);
+        avatar.title = name;
+        return avatar;
+    }
+
+    function renderDetailBuddyCard(watcher, overlay) {
+        let card = document.createElement('div');
+        card.className = 'bb-detail-buddy-card';
+
+        let name = watcher.Name || watcher.name || '';
+        let imageUrl = resolveImageUrl(watcher.ImageUrl || watcher.imageUrl);
+
+        if (imageUrl) {
+            let img = document.createElement('img');
+            img.className = 'bb-detail-buddy-avatar';
+            img.alt = name;
+            img.title = name;
+            img.src = imageUrl;
+            img.addEventListener('error', function () {
+                img.replaceWith(createDetailInitialAvatar(name));
+            });
+            card.appendChild(img);
+        } else {
+            card.appendChild(createDetailInitialAvatar(name));
+        }
+
+        let label = document.createElement('span');
+        label.className = 'bb-detail-buddy-name';
+        label.textContent = name;
+        label.title = name;
+        card.appendChild(label);
+
+        card.appendChild(createDetailProgressSection(
+            overlay.currentUser,
+            watcher,
+            overlay
+        ));
+
+        return card;
+    }
+
+    function renderDetailBuddiesSection(mountPoint, itemId, overlay) {
+        removeDetailBuddiesFromMount(mountPoint);
+        delete mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR];
+
+        overlay = parseItemOverlay(overlay);
+
+        if (!overlay || !overlay.watchers || !overlay.watchers.length) {
+            return false;
+        }
+
+        let section = document.createElement('div');
+        section.className = DETAIL_BUDDIES_CLASS + ' verticalSection detailVerticalSection';
+
+        if (overlay.isSeason) {
+            section.classList.add('bb-detail-buddies-season');
+        }
+
+        let title = document.createElement('h2');
+        title.className = 'sectionTitle';
+        title.textContent = 'Binge buddies';
+        section.appendChild(title);
+
+        let grid = document.createElement('div');
+        grid.className = 'bb-detail-buddies-grid focuscontainer-x';
+
+        overlay.watchers.forEach(function (watcher) {
+            grid.appendChild(renderDetailBuddyCard(watcher, overlay));
+        });
+
+        section.appendChild(grid);
+
+        let insertAnchor = getDetailInsertAnchor(mountPoint);
+        if (insertAnchor) {
+            mountPoint.insertBefore(section, insertAnchor);
+        } else {
+            mountPoint.appendChild(section);
+        }
+
+        mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR] = itemId;
+        return true;
+    }
+
+    function tryRenderDetailBuddies() {
+        let itemId = getDetailsItemIdFromHash();
+        if (!itemId) {
+            return true;
+        }
+
+        let mountPoint = findDetailMountPoint();
+        if (!mountPoint) {
+            return false;
+        }
+
+        if (isDetailBuddiesMounted(mountPoint, itemId)) {
+            return true;
+        }
+
+        if (mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR]
+            && mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR] !== itemId) {
+            clearDetailBuddiesMountState(mountPoint);
+        } else if (mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR] === itemId) {
+            delete mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR];
+        }
+
+        let cached = overlayCache.get(normalizeGuid(itemId));
+        if (cached) {
+            if (!cached.watchers || !cached.watchers.length) {
+                return true;
+            }
+
+            return renderDetailBuddiesSection(mountPoint, itemId, cached);
+        }
+
+        if (!pendingItemIds.has(itemId)) {
+            queueDetailBuddiesFetch(itemId);
+        }
+
+        return false;
+    }
+
+    function scheduleDetailBuddiesRetry(resetAttempts) {
+        if (resetAttempts) {
+            if (detailRetryTimer) {
+                clearTimeout(detailRetryTimer);
+                detailRetryTimer = null;
+            }
+        } else if (detailRetryTimer) {
+            return;
+        }
+
+        let attempts = 0;
+
+        function tick() {
+            detailRetryTimer = null;
+            attempts++;
+
+            if (!getDetailsItemIdFromHash()) {
+                return;
+            }
+
+            if (tryRenderDetailBuddies()) {
+                return;
+            }
+
+            if (attempts < DETAIL_RETRY_MAX) {
+                detailRetryTimer = setTimeout(tick, DETAIL_RETRY_MS);
+            }
+        }
+
+        detailRetryTimer = setTimeout(tick, 0);
+    }
+
+    function scheduleDetailBuddiesScan() {
+        if (detailScanTimer) {
+            clearTimeout(detailScanTimer);
+        }
+
+        detailScanTimer = setTimeout(function () {
+            detailScanTimer = null;
+            if (getDetailsItemIdFromHash()) {
+                scheduleDetailBuddiesRetry(true);
+            }
+        }, 80);
+    }
+
+    function scanDetailPage() {
+        if (!getDetailsItemIdFromHash()) {
+            return;
+        }
+
+        scheduleDetailBuddiesRetry(true);
+    }
+
+    function queueDetailBuddiesFetch(itemId) {
+        if (!itemId) {
+            return;
+        }
+
+        queueFetch(itemId);
     }
 
     function queueFetch(itemId) {
@@ -138,18 +620,21 @@
             clearTimeout(fetchTimer);
         }
 
-        fetchTimer = setTimeout(fetchPendingOverlays, 120);
+        fetchTimer = setTimeout(function () {
+            fetchTimer = null;
+            fetchPendingOverlays();
+        }, 120);
     }
 
     function fetchPendingOverlays() {
-        var itemIds = Array.from(pendingItemIds);
+        let itemIds = Array.from(pendingItemIds);
         pendingItemIds.clear();
 
         if (!itemIds.length || !ApiClient.getCurrentUserId || !ApiClient.getCurrentUserId()) {
             return;
         }
 
-        var query = itemIds.map(function (itemId) {
+        let query = itemIds.map(function (itemId) {
             return 'itemIds=' + encodeURIComponent(itemId);
         }).join('&');
 
@@ -159,20 +644,22 @@
             dataType: 'json'
         }).then(function (response) {
             Object.keys(response || {}).forEach(function (key) {
-                overlayCache.set(normalizeGuid(key), response[key] || []);
+                overlayCache.set(normalizeGuid(key), parseItemOverlay(response[key]));
             });
 
             document.querySelectorAll(CARD_SELECTOR).forEach(function (container) {
-                var itemId = extractItemId(container);
+                let itemId = extractItemId(container);
                 if (!itemId) {
                     return;
                 }
 
-                var watchers = overlayCache.get(normalizeGuid(itemId));
-                if (watchers) {
-                    renderOverlay(getMountPoint(container), watchers);
+                let overlay = overlayCache.get(normalizeGuid(itemId));
+                if (overlay) {
+                    renderOverlay(getMountPoint(container), overlay.watchers);
                 }
             });
+
+            scheduleDetailBuddiesRetry(true);
         });
     }
 
@@ -181,16 +668,16 @@
             return;
         }
 
-        var itemId = extractItemId(container);
+        let itemId = extractItemId(container);
         if (!itemId) {
             return;
         }
 
         container.dataset.bbWatcherProcessed = 'true';
 
-        var cached = overlayCache.get(normalizeGuid(itemId));
+        let cached = overlayCache.get(normalizeGuid(itemId));
         if (cached) {
-            renderOverlay(getMountPoint(container), cached);
+            renderOverlay(getMountPoint(container), cached.watchers);
             return;
         }
 
@@ -208,6 +695,7 @@
 
         observer = new MutationObserver(function () {
             scanCards(document);
+            scheduleDetailBuddiesScan();
         });
 
         observer.observe(document.body, {
@@ -217,8 +705,14 @@
     }
 
     scanCards(document);
+    scanDetailPage();
     setupObserver();
     document.addEventListener('viewshow', function () {
         scanCards(document);
+        scanDetailPage();
+    });
+    window.addEventListener('hashchange', function () {
+        clearAllDetailBuddiesState();
+        scheduleDetailBuddiesRetry(true);
     });
 })();
