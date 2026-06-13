@@ -45,100 +45,125 @@ public class ItemWatchProgressService : IItemWatchProgressService
     }
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<Guid, IReadOnlyList<GroupWatcherDto>> GetWatchersForItems(
+    public IReadOnlyDictionary<Guid, ItemOverlayDto> GetItemOverlays(
         Guid currentUserId,
         IReadOnlyList<Guid> itemIds)
     {
-        var result = new Dictionary<Guid, IReadOnlyList<GroupWatcherDto>>();
+        var result = new Dictionary<Guid, ItemOverlayDto>();
         if (itemIds.Count == 0)
         {
             return result;
         }
 
+        var distinctItemIds = itemIds.Distinct().ToList();
         var visibleMemberIds = _groupMembershipService.GetVisibleMemberIds(currentUserId);
-        if (visibleMemberIds.Count == 0)
+        var runTimeTicksByItem = new Dictionary<Guid, long>();
+
+        foreach (var itemId in distinctItemIds)
         {
-            foreach (var itemId in itemIds.Distinct())
+            if (!TryGetSupportedItem(itemId, currentUserId, out var item))
             {
-                result[itemId] = Array.Empty<GroupWatcherDto>();
+                result[itemId] = CreateEmptyOverlay();
+                continue;
             }
 
-            return result;
+            runTimeTicksByItem[itemId] = item.RunTimeTicks ?? 0;
         }
 
-        var distinctItemIds = itemIds.Distinct().ToList();
-        var supportedItemIds = distinctItemIds
-            .Where(itemId => TryGetSupportedItem(itemId, currentUserId, out _))
-            .ToList();
-
-        foreach (var unsupportedItemId in distinctItemIds.Except(supportedItemIds))
-        {
-            result[unsupportedItemId] = Array.Empty<GroupWatcherDto>();
-        }
-
-        if (supportedItemIds.Count == 0)
+        if (runTimeTicksByItem.Count == 0)
         {
             return result;
         }
 
-        var watcherProgressByItem = LoadWatcherProgressByItem(supportedItemIds, visibleMemberIds);
+        var overlayProgress = LoadOverlayProgress(
+            runTimeTicksByItem.Keys.ToList(),
+            visibleMemberIds,
+            currentUserId);
 
-        foreach (var itemId in supportedItemIds)
+        foreach (var itemId in runTimeTicksByItem.Keys)
         {
-            var watcherProgress = watcherProgressByItem.GetValueOrDefault(itemId) ?? Array.Empty<MemberWatchProgress>();
+            var progress = overlayProgress.GetValueOrDefault(itemId);
+            var currentUserProgress = progress?.CurrentUser ?? new WatchProgressDto();
+            var watcherProgress = progress?.Watchers.Values.ToList() ?? new List<MemberWatchProgress>();
+
             var watchers = watcherProgress
-                .Select(progress => _userProfileService.MapWatcher(
-                    progress.UserId,
-                    progress.Played,
-                    progress.PlaybackPositionTicks,
+                .Select(memberProgress => _userProfileService.MapWatcher(
+                    memberProgress.UserId,
+                    memberProgress.Played,
+                    memberProgress.PlaybackPositionTicks,
                     OverlayAvatarSize))
                 .Where(watcher => watcher is not null)
                 .Select(watcher => watcher!)
                 .OrderBy(watcher => watcher.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            result[itemId] = watchers;
+            result[itemId] = new ItemOverlayDto
+            {
+                RunTimeTicks = runTimeTicksByItem[itemId],
+                CurrentUser = currentUserProgress,
+                Watchers = watchers
+            };
         }
 
         return result;
     }
 
-    private Dictionary<Guid, IReadOnlyList<MemberWatchProgress>> LoadWatcherProgressByItem(
+    private static ItemOverlayDto CreateEmptyOverlay()
+    {
+        return new ItemOverlayDto
+        {
+            RunTimeTicks = 0,
+            CurrentUser = new WatchProgressDto(),
+            Watchers = Array.Empty<GroupWatcherDto>()
+        };
+    }
+
+    private Dictionary<Guid, ItemProgressSnapshot> LoadOverlayProgress(
         IReadOnlyList<Guid> itemIds,
-        IReadOnlyList<Guid> memberIds)
+        IReadOnlyList<Guid> memberIds,
+        Guid currentUserId)
     {
         using var context = _dbContextFactory.CreateDbContext();
 
-        var rows = context.UserData
-            .AsNoTracking()
-            .Where(userData => itemIds.Contains(userData.ItemId) && memberIds.Contains(userData.UserId))
+        var trackedUserIds = memberIds
+            .Append(currentUserId)
+            .Distinct()
             .ToList();
 
-        var progressByItem = itemIds.ToDictionary(itemId => itemId, _ => new Dictionary<Guid, MemberWatchProgress>());
+        var rows = context.UserData
+            .AsNoTracking()
+            .Where(userData => itemIds.Contains(userData.ItemId) && trackedUserIds.Contains(userData.UserId))
+            .ToList();
+
+        var snapshots = itemIds.ToDictionary(
+            itemId => itemId,
+            _ => new ItemProgressSnapshot());
 
         foreach (var row in rows)
         {
+            if (!snapshots.TryGetValue(row.ItemId, out var snapshot))
+            {
+                continue;
+            }
+
+            if (row.UserId == currentUserId)
+            {
+                snapshot.CurrentUser = MapWatchProgress(row);
+                continue;
+            }
+
             if (!HasStartedWatching(row))
             {
                 continue;
             }
 
-            if (!progressByItem.TryGetValue(row.ItemId, out var progressByUser))
-            {
-                continue;
-            }
-
-            progressByUser[row.UserId] = new MemberWatchProgress(
+            snapshot.Watchers[row.UserId] = new MemberWatchProgress(
                 row.UserId,
                 row.Played,
                 row.PlaybackPositionTicks);
         }
 
-        return progressByItem.ToDictionary(
-            entry => entry.Key,
-            entry => (IReadOnlyList<MemberWatchProgress>)entry.Value.Values
-                .OrderBy(progress => progress.UserId)
-                .ToList());
+        return snapshots;
     }
 
     private bool TryGetSupportedItem(Guid itemId, Guid currentUserId, out BaseItem item)
@@ -169,6 +194,15 @@ public class ItemWatchProgressService : IItemWatchProgressService
         return false;
     }
 
+    private static WatchProgressDto MapWatchProgress(UserData userData)
+    {
+        return new WatchProgressDto
+        {
+            Played = userData.Played,
+            PlaybackPositionTicks = userData.PlaybackPositionTicks
+        };
+    }
+
     private static bool HasStartedWatching(UserData userData)
     {
         return userData.Played
@@ -178,4 +212,11 @@ public class ItemWatchProgressService : IItemWatchProgressService
     }
 
     private sealed record MemberWatchProgress(Guid UserId, bool Played, long PlaybackPositionTicks);
+
+    private sealed class ItemProgressSnapshot
+    {
+        public WatchProgressDto CurrentUser { get; set; } = new();
+
+        public Dictionary<Guid, MemberWatchProgress> Watchers { get; } = new();
+    }
 }

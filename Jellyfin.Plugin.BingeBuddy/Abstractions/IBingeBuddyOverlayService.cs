@@ -15,5 +15,5 @@ public interface IBingeBuddyOverlayService
     /// <param name="userId">The authenticated user identifier.</param>
     /// <param name="itemIds">The media item identifiers.</param>
     /// <returns>Watchers keyed by item identifier.</returns>
-    IReadOnlyDictionary<Guid, IReadOnlyList<GroupWatcherDto>> GetOverlaysForUser(Guid userId, IReadOnlyList<Guid> itemIds);
+    IReadOnlyDictionary<Guid, ItemOverlayDto> GetOverlaysForUser(Guid userId, IReadOnlyList<Guid> itemIds);
 }

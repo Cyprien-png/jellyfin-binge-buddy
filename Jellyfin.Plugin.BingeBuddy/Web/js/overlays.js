@@ -9,6 +9,7 @@
     let DETAIL_SECTION_SELECTOR = '.detailSection';
     let OVERLAY_CLASS = 'bb-watcher-stack';
     let DETAIL_BUDDIES_CLASS = 'bb-detail-buddies';
+    let TICKS_PER_SECOND = 10000000;
     let pendingItemIds = new Set();
     let overlayCache = new Map();
     let fetchTimer = null;
@@ -139,12 +140,153 @@
         return match ? match[1] : null;
     }
 
-    function getWatchersFromResponse(response, itemId) {
-        if (!response) {
-            return [];
+    function parseWatchProgress(raw) {
+        if (!raw) {
+            return { played: false, playbackPositionTicks: 0 };
         }
 
-        return response[normalizeGuid(itemId)] || response[itemId] || [];
+        return {
+            played: !!(raw.played || raw.Played),
+            playbackPositionTicks: Number(raw.playbackPositionTicks || raw.PlaybackPositionTicks || 0)
+        };
+    }
+
+    function parseWatcher(raw) {
+        var progress = parseWatchProgress(raw);
+
+        return {
+            Name: raw.Name || raw.name || '',
+            name: raw.Name || raw.name || '',
+            ImageUrl: raw.ImageUrl || raw.imageUrl || '',
+            imageUrl: raw.ImageUrl || raw.imageUrl || '',
+            played: progress.played,
+            playbackPositionTicks: progress.playbackPositionTicks
+        };
+    }
+
+    function parseItemOverlay(raw) {
+        if (!raw) {
+            return {
+                watchers: [],
+                runTimeTicks: 0,
+                currentUser: { played: false, playbackPositionTicks: 0 }
+            };
+        }
+
+        if (Array.isArray(raw)) {
+            return {
+                watchers: raw.map(parseWatcher),
+                runTimeTicks: 0,
+                currentUser: { played: false, playbackPositionTicks: 0 }
+            };
+        }
+
+        return {
+            watchers: (raw.watchers || raw.Watchers || []).map(parseWatcher),
+            runTimeTicks: Number(raw.runTimeTicks || raw.RunTimeTicks || 0),
+            currentUser: parseWatchProgress(raw.currentUser || raw.CurrentUser)
+        };
+    }
+
+    function getProgressPercent(played, playbackPositionTicks, runTimeTicks) {
+        if (played) {
+            return 100;
+        }
+
+        if (!runTimeTicks || runTimeTicks <= 0) {
+            return 0;
+        }
+
+        return Math.min(100, Math.round((playbackPositionTicks / runTimeTicks) * 100));
+    }
+
+    function formatWatchedDuration(playbackPositionTicks) {
+        var totalSeconds = Math.max(0, Math.floor(playbackPositionTicks / TICKS_PER_SECOND));
+        var hours = Math.floor(totalSeconds / 3600);
+        var minutes = Math.floor((totalSeconds % 3600) / 60);
+        var seconds = totalSeconds % 60;
+
+        if (hours >= 1) {
+            return hours + 'h ' + minutes + 'm ' + seconds + 's';
+        }
+
+        return minutes + 'm ' + seconds + 's';
+    }
+
+    function formatProgressStatus(played, playbackPositionTicks, runTimeTicks) {
+        if (played) {
+            return 'Finished';
+        }
+
+        var watched = formatWatchedDuration(playbackPositionTicks);
+        var percent = getProgressPercent(false, playbackPositionTicks, runTimeTicks);
+        return watched + ' watched (' + percent + '%)';
+    }
+
+    function createProgressRow(labelText, progress, runTimeTicks, variant) {
+        var row = document.createElement('div');
+        row.className = 'bb-detail-progress-row';
+
+        var meta = document.createElement('div');
+        meta.className = 'bb-detail-progress-meta';
+
+        var label = document.createElement('span');
+        label.className = 'bb-detail-progress-label';
+        label.textContent = labelText;
+
+        var status = document.createElement('span');
+        status.className = 'bb-detail-progress-status';
+        status.textContent = formatProgressStatus(
+            progress.played,
+            progress.playbackPositionTicks,
+            runTimeTicks
+        );
+
+        meta.appendChild(label);
+        meta.appendChild(status);
+
+        var track = document.createElement('div');
+        track.className = 'bb-detail-progress-track';
+
+        var fill = document.createElement('div');
+        fill.className = 'bb-detail-progress-fill bb-detail-progress-fill-' + variant;
+        fill.style.width = getProgressPercent(
+            progress.played,
+            progress.playbackPositionTicks,
+            runTimeTicks
+        ) + '%';
+
+        track.appendChild(fill);
+        row.appendChild(meta);
+        row.appendChild(track);
+
+        return row;
+    }
+
+    function createDetailProgressSection(currentUser, watcher, runTimeTicks) {
+        var section = document.createElement('div');
+        section.className = 'bb-detail-progress';
+
+        var heading = document.createElement('div');
+        heading.className = 'bb-detail-progress-heading';
+        heading.textContent = 'Progress';
+        section.appendChild(heading);
+
+        section.appendChild(createProgressRow('You', currentUser, runTimeTicks, 'you'));
+        section.appendChild(createProgressRow('Them', {
+            played: watcher.played,
+            playbackPositionTicks: watcher.playbackPositionTicks
+        }, runTimeTicks, 'them'));
+
+        return section;
+    }
+
+    function getItemOverlayFromResponse(response, itemId) {
+        if (!response) {
+            return parseItemOverlay(null);
+        }
+
+        return parseItemOverlay(response[normalizeGuid(itemId)] || response[itemId]);
     }
 
     function removeDetailBuddiesSection(detailSection) {
@@ -162,7 +304,7 @@
         return avatar;
     }
 
-    function renderDetailBuddyCard(watcher) {
+    function renderDetailBuddyCard(watcher, overlay) {
         let card = document.createElement('div');
         card.className = 'bb-detail-buddy-card';
 
@@ -189,14 +331,20 @@
         label.title = name;
         card.appendChild(label);
 
+        card.appendChild(createDetailProgressSection(
+            overlay.currentUser,
+            watcher,
+            overlay.runTimeTicks
+        ));
+
         return card;
     }
 
-    function renderDetailBuddiesSection(detailSection, itemId, watchers) {
+    function renderDetailBuddiesSection(detailSection, itemId, overlay) {
         removeDetailBuddiesSection(detailSection);
         detailSection.dataset.bbDetailBuddiesItemId = itemId;
 
-        if (!watchers || !watchers.length) {
+        if (!overlay || !overlay.watchers || !overlay.watchers.length) {
             return;
         }
 
@@ -211,21 +359,21 @@
         let grid = document.createElement('div');
         grid.className = 'bb-detail-buddies-grid focuscontainer-x';
 
-        watchers.forEach(function (watcher) {
-            grid.appendChild(renderDetailBuddyCard(watcher));
+        overlay.watchers.forEach(function (watcher) {
+            grid.appendChild(renderDetailBuddyCard(watcher, overlay));
         });
 
         section.appendChild(grid);
         detailSection.appendChild(section);
     }
 
-    function renderDetailBuddiesForItem(itemId, watchers) {
+    function renderDetailBuddiesForItem(itemId, overlay) {
         let detailSection = document.querySelector(DETAIL_SECTION_SELECTOR);
         if (!detailSection || getDetailsItemIdFromHash() !== itemId) {
             return;
         }
 
-        renderDetailBuddiesSection(detailSection, itemId, watchers);
+        renderDetailBuddiesSection(detailSection, itemId, parseItemOverlay(overlay));
     }
 
     function queueDetailBuddiesFetch(itemId) {
@@ -289,7 +437,7 @@
             dataType: 'json'
         }).then(function (response) {
             Object.keys(response || {}).forEach(function (key) {
-                overlayCache.set(normalizeGuid(key), response[key] || []);
+                overlayCache.set(normalizeGuid(key), parseItemOverlay(response[key]));
             });
 
             document.querySelectorAll(CARD_SELECTOR).forEach(function (container) {
@@ -298,14 +446,14 @@
                     return;
                 }
 
-                let watchers = overlayCache.get(normalizeGuid(itemId));
-                if (watchers) {
-                    renderOverlay(getMountPoint(container), watchers);
+                let overlay = overlayCache.get(normalizeGuid(itemId));
+                if (overlay) {
+                    renderOverlay(getMountPoint(container), overlay.watchers);
                 }
             });
 
             itemIds.forEach(function (itemId) {
-                renderDetailBuddiesForItem(itemId, getWatchersFromResponse(response, itemId));
+                renderDetailBuddiesForItem(itemId, getItemOverlayFromResponse(response, itemId));
             });
         });
     }
@@ -324,7 +472,7 @@
 
         let cached = overlayCache.get(normalizeGuid(itemId));
         if (cached) {
-            renderOverlay(getMountPoint(container), cached);
+            renderOverlay(getMountPoint(container), cached.watchers);
             return;
         }
 
