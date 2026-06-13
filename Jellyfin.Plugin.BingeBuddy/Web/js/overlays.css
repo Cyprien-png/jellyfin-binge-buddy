@@ -48,6 +48,10 @@
     margin-bottom: 1.5em;
 }
 
+.detailPagePrimaryContent > .bb-detail-buddies {
+    margin-bottom: 1.25em;
+}
+
 .bb-detail-buddies-grid {
     display: flex;
     flex-wrap: wrap;

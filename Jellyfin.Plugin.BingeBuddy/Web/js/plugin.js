@@ -49,7 +49,6 @@
         let script = document.createElement('script');
         script.id = 'binge-buddy-overlay-script';
         script.src = ApiClient.getUrl('BingeBuddy/js/overlays.js');
-        script.defer = true;
         document.head.appendChild(script);
     }
 

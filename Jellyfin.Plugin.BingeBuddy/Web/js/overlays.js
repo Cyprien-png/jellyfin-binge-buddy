@@ -7,12 +7,18 @@
 
     let CARD_SELECTOR = 'a.cardImageContainer.cardContent, div.listItemImage';
     let DETAIL_SECTION_SELECTOR = '.detailSection';
+    let DETAIL_MOUNT_SELECTOR = '.detailPagePrimaryContent';
     let OVERLAY_CLASS = 'bb-watcher-stack';
     let DETAIL_BUDDIES_CLASS = 'bb-detail-buddies';
+    let DETAIL_MOUNT_DATA_ATTR = 'bbDetailBuddiesItemId';
     let TICKS_PER_SECOND = 10000000;
+    let DETAIL_RETRY_MS = 150;
+    let DETAIL_RETRY_MAX = 40;
     let pendingItemIds = new Set();
     let overlayCache = new Map();
     let fetchTimer = null;
+    let detailRetryTimer = null;
+    let detailScanTimer = null;
     let observer = null;
 
     function normalizeGuid(value) {
@@ -212,14 +218,6 @@
         return fallbackRunTimeTicks || 0;
     }
 
-    function formatProgressLabel(labelText, episodeIndexNumber) {
-        if (episodeIndexNumber === null || episodeIndexNumber === undefined) {
-            return labelText;
-        }
-
-        return labelText + ' · Ep. ' + episodeIndexNumber;
-    }
-
     function getProgressPercent(played, playbackPositionTicks, runTimeTicks) {
         if (played) {
             return 100;
@@ -255,7 +253,7 @@
         return watched + ' watched (' + percent + '%)';
     }
 
-    function createProgressRow(labelText, progress, runTimeTicks, let iant, options) {
+    function createProgressRow(labelText, progress, runTimeTicks, variant, options) {
         options = options || {};
         let episodeIndexNumber = options.episodeIndexNumber;
         let showEpisodeLine = options.showEpisodeLine;
@@ -293,7 +291,7 @@
         track.className = 'bb-detail-progress-track';
 
         let fill = document.createElement('div');
-        fill.className = 'bb-detail-progress-fill bb-detail-progress-fill-' + let iant;
+        fill.className = 'bb-detail-progress-fill bb-detail-progress-fill-' + variant;
         fill.style.width = getProgressPercent(
             progress.played,
             progress.playbackPositionTicks,
@@ -343,11 +341,87 @@
         return parseItemOverlay(response[normalizeGuid(itemId)] || response[itemId]);
     }
 
-    function removeDetailBuddiesSection(detailSection) {
-        let existing = detailSection.querySelector('.' + DETAIL_BUDDIES_CLASS);
-        if (existing) {
-            existing.remove();
+    function removeDetailBuddiesFromMount(mountPoint) {
+        if (!mountPoint) {
+            return;
         }
+
+        mountPoint.querySelectorAll('.' + DETAIL_BUDDIES_CLASS).forEach(function (element) {
+            element.remove();
+        });
+    }
+
+    function clearAllDetailBuddiesState() {
+        document.querySelectorAll('.' + DETAIL_BUDDIES_CLASS).forEach(function (element) {
+            element.remove();
+        });
+
+        document.querySelectorAll('[data-bb-detail-buddies-item-id]').forEach(function (element) {
+            delete element.dataset[DETAIL_MOUNT_DATA_ATTR];
+        });
+    }
+
+    function isElementVisible(element) {
+        if (!element) {
+            return false;
+        }
+
+        if (element.offsetParent !== null) {
+            return true;
+        }
+
+        return element.getClientRects().length > 0;
+    }
+
+    function findDetailMountPoint() {
+        let visiblePage = document.querySelector('.page:not(.hide)');
+        let candidates = [];
+
+        if (visiblePage) {
+            candidates = candidates.concat(Array.from(visiblePage.querySelectorAll(DETAIL_MOUNT_SELECTOR)));
+            candidates = candidates.concat(Array.from(visiblePage.querySelectorAll(DETAIL_SECTION_SELECTOR)));
+        }
+
+        candidates = candidates.concat(Array.from(document.querySelectorAll(DETAIL_MOUNT_SELECTOR)));
+        candidates = candidates.concat(Array.from(document.querySelectorAll(DETAIL_SECTION_SELECTOR)));
+
+        for (let i = 0; i < candidates.length; i++) {
+            if (isElementVisible(candidates[i])) {
+                return candidates[i];
+            }
+        }
+
+        return candidates.length ? candidates[candidates.length - 1] : null;
+    }
+
+    function getDetailInsertAnchor(mountPoint) {
+        if (!mountPoint) {
+            return null;
+        }
+
+        if (mountPoint.matches(DETAIL_MOUNT_SELECTOR)) {
+            return mountPoint.querySelector(DETAIL_SECTION_SELECTOR) || mountPoint.firstChild;
+        }
+
+        return mountPoint.firstChild;
+    }
+
+    function isDetailBuddiesMounted(mountPoint, itemId) {
+        if (!mountPoint) {
+            return false;
+        }
+
+        return mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR] === itemId
+            && !!mountPoint.querySelector('.' + DETAIL_BUDDIES_CLASS);
+    }
+
+    function clearDetailBuddiesMountState(mountPoint) {
+        if (!mountPoint) {
+            return;
+        }
+
+        delete mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR];
+        removeDetailBuddiesFromMount(mountPoint);
     }
 
     function createDetailInitialAvatar(name) {
@@ -394,14 +468,14 @@
         return card;
     }
 
-    function renderDetailBuddiesSection(detailSection, itemId, overlay) {
-        removeDetailBuddiesSection(detailSection);
-        detailSection.dataset.bbDetailBuddiesItemId = itemId;
+    function renderDetailBuddiesSection(mountPoint, itemId, overlay) {
+        removeDetailBuddiesFromMount(mountPoint);
+        delete mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR];
 
         overlay = parseItemOverlay(overlay);
 
         if (!overlay || !overlay.watchers || !overlay.watchers.length) {
-            return;
+            return false;
         }
 
         let section = document.createElement('div');
@@ -424,16 +498,107 @@
         });
 
         section.appendChild(grid);
-        detailSection.insertBefore(section, detailSection.firstChild);
+
+        let insertAnchor = getDetailInsertAnchor(mountPoint);
+        if (insertAnchor) {
+            mountPoint.insertBefore(section, insertAnchor);
+        } else {
+            mountPoint.appendChild(section);
+        }
+
+        mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR] = itemId;
+        return true;
     }
 
-    function renderDetailBuddiesForItem(itemId, overlay) {
-        let detailSection = document.querySelector(DETAIL_SECTION_SELECTOR);
-        if (!detailSection || getDetailsItemIdFromHash() !== itemId) {
+    function tryRenderDetailBuddies() {
+        let itemId = getDetailsItemIdFromHash();
+        if (!itemId) {
+            return true;
+        }
+
+        let mountPoint = findDetailMountPoint();
+        if (!mountPoint) {
+            return false;
+        }
+
+        if (isDetailBuddiesMounted(mountPoint, itemId)) {
+            return true;
+        }
+
+        if (mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR]
+            && mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR] !== itemId) {
+            clearDetailBuddiesMountState(mountPoint);
+        } else if (mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR] === itemId) {
+            delete mountPoint.dataset[DETAIL_MOUNT_DATA_ATTR];
+        }
+
+        let cached = overlayCache.get(normalizeGuid(itemId));
+        if (cached) {
+            if (!cached.watchers || !cached.watchers.length) {
+                return true;
+            }
+
+            return renderDetailBuddiesSection(mountPoint, itemId, cached);
+        }
+
+        if (!pendingItemIds.has(itemId)) {
+            queueDetailBuddiesFetch(itemId);
+        }
+
+        return false;
+    }
+
+    function scheduleDetailBuddiesRetry(resetAttempts) {
+        if (resetAttempts) {
+            if (detailRetryTimer) {
+                clearTimeout(detailRetryTimer);
+                detailRetryTimer = null;
+            }
+        } else if (detailRetryTimer) {
             return;
         }
 
-        renderDetailBuddiesSection(detailSection, itemId, parseItemOverlay(overlay));
+        let attempts = 0;
+
+        function tick() {
+            detailRetryTimer = null;
+            attempts++;
+
+            if (!getDetailsItemIdFromHash()) {
+                return;
+            }
+
+            if (tryRenderDetailBuddies()) {
+                return;
+            }
+
+            if (attempts < DETAIL_RETRY_MAX) {
+                detailRetryTimer = setTimeout(tick, DETAIL_RETRY_MS);
+            }
+        }
+
+        detailRetryTimer = setTimeout(tick, 0);
+    }
+
+    function scheduleDetailBuddiesScan() {
+        if (detailScanTimer) {
+            clearTimeout(detailScanTimer);
+        }
+
+        detailScanTimer = setTimeout(function () {
+            detailScanTimer = null;
+            if (getDetailsItemIdFromHash()) {
+                scheduleDetailBuddiesRetry(true);
+            }
+        }, 80);
+    }
+
+    function scanDetailPage() {
+        if (!getDetailsItemIdFromHash()) {
+            return;
+        }
+
+        scheduleDetailBuddiesRetry(true);
     }
 
     function queueDetailBuddiesFetch(itemId) {
@@ -442,27 +607,6 @@
         }
 
         queueFetch(itemId);
-    }
-
-    function scanDetailPage() {
-        let itemId = getDetailsItemIdFromHash();
-        let detailSection = document.querySelector(DETAIL_SECTION_SELECTOR);
-
-        if (!itemId || !detailSection) {
-            return;
-        }
-
-        if (detailSection.dataset.bbDetailBuddiesItemId === itemId) {
-            return;
-        }
-
-        let cached = overlayCache.get(normalizeGuid(itemId));
-        if (cached) {
-            renderDetailBuddiesSection(detailSection, itemId, cached);
-            return;
-        }
-
-        queueDetailBuddiesFetch(itemId);
     }
 
     function queueFetch(itemId) {
@@ -476,7 +620,10 @@
             clearTimeout(fetchTimer);
         }
 
-        fetchTimer = setTimeout(fetchPendingOverlays, 120);
+        fetchTimer = setTimeout(function () {
+            fetchTimer = null;
+            fetchPendingOverlays();
+        }, 120);
     }
 
     function fetchPendingOverlays() {
@@ -512,9 +659,7 @@
                 }
             });
 
-            itemIds.forEach(function (itemId) {
-                renderDetailBuddiesForItem(itemId, getItemOverlayFromResponse(response, itemId));
-            });
+            scheduleDetailBuddiesRetry(true);
         });
     }
 
@@ -550,7 +695,7 @@
 
         observer = new MutationObserver(function () {
             scanCards(document);
-            scanDetailPage();
+            scheduleDetailBuddiesScan();
         });
 
         observer.observe(document.body, {
@@ -567,11 +712,7 @@
         scanDetailPage();
     });
     window.addEventListener('hashchange', function () {
-        let detailSection = document.querySelector(DETAIL_SECTION_SELECTOR);
-        if (detailSection) {
-            delete detailSection.dataset.bbDetailBuddiesItemId;
-        }
-
-        scanDetailPage();
+        clearAllDetailBuddiesState();
+        scheduleDetailBuddiesRetry(true);
     });
 })();
