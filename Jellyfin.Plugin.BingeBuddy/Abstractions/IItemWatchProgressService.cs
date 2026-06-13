@@ -5,7 +5,7 @@ using Jellyfin.Plugin.BingeBuddy.Api;
 namespace Jellyfin.Plugin.BingeBuddy.Abstractions;
 
 /// <summary>
-/// Determines which group members have started watching media items.
+/// Determines which group members have started watching media items, episodes, or season episodes.
 /// </summary>
 public interface IItemWatchProgressService
 {
@@ -14,8 +14,8 @@ public interface IItemWatchProgressService
     /// </summary>
     /// <param name="currentUserId">The authenticated user identifier.</param>
     /// <param name="itemIds">The media item identifiers.</param>
-    /// <returns>Watchers keyed by item identifier.</returns>
-    IReadOnlyDictionary<Guid, IReadOnlyList<GroupUserDto>> GetWatchersForItems(
+    /// <returns>Overlay data keyed by item identifier.</returns>
+    IReadOnlyDictionary<Guid, ItemOverlayDto> GetItemOverlays(
         Guid currentUserId,
         IReadOnlyList<Guid> itemIds);
 }
