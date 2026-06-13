@@ -14,6 +14,11 @@ public class ItemOverlayDto
     public long RunTimeTicks { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the overlay item is a TV season.
+    /// </summary>
+    public bool IsSeason { get; set; }
+
+    /// <summary>
     /// Gets or sets the authenticated user's watch progress.
     /// </summary>
     public WatchProgressDto CurrentUser { get; set; } = new();

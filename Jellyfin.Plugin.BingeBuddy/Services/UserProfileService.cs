@@ -66,7 +66,13 @@ public class UserProfileService : IUserProfileService
     }
 
     /// <inheritdoc />
-    public GroupWatcherDto? MapWatcher(Guid userId, bool played, long playbackPositionTicks, int avatarSize = 88)
+    public GroupWatcherDto? MapWatcher(
+        Guid userId,
+        bool played,
+        long playbackPositionTicks,
+        int avatarSize = 88,
+        int? episodeIndexNumber = null,
+        long episodeRunTimeTicks = 0)
     {
         var user = MapUser(userId, avatarSize);
         if (user is null)
@@ -82,7 +88,9 @@ public class UserProfileService : IUserProfileService
             HasPrimaryImage = user.HasPrimaryImage,
             ImageUrl = user.ImageUrl,
             Played = played,
-            PlaybackPositionTicks = playbackPositionTicks
+            PlaybackPositionTicks = playbackPositionTicks,
+            EpisodeIndexNumber = episodeIndexNumber,
+            EpisodeRunTimeTicks = episodeRunTimeTicks
         };
     }
 }
