@@ -5,6 +5,7 @@ using Jellyfin.Database.Implementations;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.BingeBuddy.Abstractions;
 using Jellyfin.Plugin.BingeBuddy.Api;
+using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
@@ -23,6 +24,7 @@ public class ItemWatchProgressService : IItemWatchProgressService
     private readonly IGroupMembershipService _groupMembershipService;
     private readonly IUserProfileService _userProfileService;
     private readonly ILibraryManager _libraryManager;
+    private readonly IUserManager _userManager;
     private readonly IDbContextFactory<JellyfinDbContext> _dbContextFactory;
 
     /// <summary>
@@ -31,16 +33,19 @@ public class ItemWatchProgressService : IItemWatchProgressService
     /// <param name="groupMembershipService">The group membership service.</param>
     /// <param name="userProfileService">The user profile service.</param>
     /// <param name="libraryManager">The Jellyfin library manager.</param>
+    /// <param name="userManager">The Jellyfin user manager.</param>
     /// <param name="dbContextFactory">The Jellyfin database context factory.</param>
     public ItemWatchProgressService(
         IGroupMembershipService groupMembershipService,
         IUserProfileService userProfileService,
         ILibraryManager libraryManager,
+        IUserManager userManager,
         IDbContextFactory<JellyfinDbContext> dbContextFactory)
     {
         _groupMembershipService = groupMembershipService;
         _userProfileService = userProfileService;
         _libraryManager = libraryManager;
+        _userManager = userManager;
         _dbContextFactory = dbContextFactory;
     }
 
@@ -57,30 +62,27 @@ public class ItemWatchProgressService : IItemWatchProgressService
 
         var distinctItemIds = itemIds.Distinct().ToList();
         var visibleMemberIds = _groupMembershipService.GetVisibleMemberIds(currentUserId);
-        var runTimeTicksByItem = new Dictionary<Guid, long>();
+        var itemContexts = new Dictionary<Guid, OverlayItemContext>();
 
         foreach (var itemId in distinctItemIds)
         {
-            if (!TryGetSupportedItem(itemId, currentUserId, out var item))
+            if (!TryResolveOverlayItem(itemId, currentUserId, out var item, out var context))
             {
                 result[itemId] = CreateEmptyOverlay();
                 continue;
             }
 
-            runTimeTicksByItem[itemId] = item.RunTimeTicks ?? 0;
+            itemContexts[itemId] = context;
         }
 
-        if (runTimeTicksByItem.Count == 0)
+        if (itemContexts.Count == 0)
         {
             return result;
         }
 
-        var overlayProgress = LoadOverlayProgress(
-            runTimeTicksByItem.Keys.ToList(),
-            visibleMemberIds,
-            currentUserId);
+        var overlayProgress = LoadOverlayProgress(itemContexts, visibleMemberIds, currentUserId);
 
-        foreach (var itemId in runTimeTicksByItem.Keys)
+        foreach (var (itemId, context) in itemContexts)
         {
             var progress = overlayProgress.GetValueOrDefault(itemId);
             var currentUserProgress = progress?.CurrentUser ?? new WatchProgressDto();
@@ -99,7 +101,7 @@ public class ItemWatchProgressService : IItemWatchProgressService
 
             result[itemId] = new ItemOverlayDto
             {
-                RunTimeTicks = runTimeTicksByItem[itemId],
+                RunTimeTicks = context.RunTimeTicks,
                 CurrentUser = currentUserProgress,
                 Watchers = watchers
             };
@@ -119,7 +121,7 @@ public class ItemWatchProgressService : IItemWatchProgressService
     }
 
     private Dictionary<Guid, ItemProgressSnapshot> LoadOverlayProgress(
-        IReadOnlyList<Guid> itemIds,
+        IReadOnlyDictionary<Guid, OverlayItemContext> itemContexts,
         IReadOnlyList<Guid> memberIds,
         Guid currentUserId)
     {
@@ -130,45 +132,88 @@ public class ItemWatchProgressService : IItemWatchProgressService
             .Distinct()
             .ToList();
 
+        var progressItemToOverlayIds = new Dictionary<Guid, List<Guid>>();
+        foreach (var (overlayItemId, overlayContext) in itemContexts)
+        {
+            foreach (var progressItemId in overlayContext.ProgressItemIds)
+            {
+                if (!progressItemToOverlayIds.TryGetValue(progressItemId, out var overlayItemIds))
+                {
+                    overlayItemIds = new List<Guid>();
+                    progressItemToOverlayIds[progressItemId] = overlayItemIds;
+                }
+
+                overlayItemIds.Add(overlayItemId);
+            }
+        }
+
+        var progressItemIds = progressItemToOverlayIds.Keys.ToList();
+        if (progressItemIds.Count == 0)
+        {
+            return itemContexts.Keys.ToDictionary(itemId => itemId, _ => new ItemProgressSnapshot());
+        }
+
         var rows = context.UserData
             .AsNoTracking()
-            .Where(userData => itemIds.Contains(userData.ItemId) && trackedUserIds.Contains(userData.UserId))
+            .Where(userData => progressItemIds.Contains(userData.ItemId) && trackedUserIds.Contains(userData.UserId))
             .ToList();
 
-        var snapshots = itemIds.ToDictionary(
+        var snapshots = itemContexts.Keys.ToDictionary(
             itemId => itemId,
             _ => new ItemProgressSnapshot());
 
         foreach (var row in rows)
         {
-            if (!snapshots.TryGetValue(row.ItemId, out var snapshot))
+            if (!progressItemToOverlayIds.TryGetValue(row.ItemId, out var overlayItemIds))
             {
                 continue;
             }
 
-            if (row.UserId == currentUserId)
+            foreach (var overlayItemId in overlayItemIds)
             {
-                snapshot.CurrentUser = MapWatchProgress(row);
-                continue;
-            }
+                if (!snapshots.TryGetValue(overlayItemId, out var snapshot))
+                {
+                    continue;
+                }
 
-            if (!HasStartedWatching(row))
-            {
-                continue;
-            }
+                if (row.UserId == currentUserId)
+                {
+                    snapshot.CurrentUser = MergeWatchProgress(snapshot.CurrentUser, MapWatchProgress(row));
+                    continue;
+                }
 
-            snapshot.Watchers[row.UserId] = new MemberWatchProgress(
-                row.UserId,
-                row.Played,
-                row.PlaybackPositionTicks);
+                if (!HasStartedWatching(row))
+                {
+                    continue;
+                }
+
+                var incoming = new MemberWatchProgress(
+                    row.UserId,
+                    row.Played,
+                    row.PlaybackPositionTicks);
+
+                if (snapshot.Watchers.TryGetValue(row.UserId, out var existing))
+                {
+                    snapshot.Watchers[row.UserId] = MergeMemberProgress(existing, incoming);
+                }
+                else
+                {
+                    snapshot.Watchers[row.UserId] = incoming;
+                }
+            }
         }
 
         return snapshots;
     }
 
-    private bool TryGetSupportedItem(Guid itemId, Guid currentUserId, out BaseItem item)
+    private bool TryResolveOverlayItem(
+        Guid itemId,
+        Guid currentUserId,
+        out BaseItem item,
+        out OverlayItemContext context)
     {
         item = null!;
+        context = null!;
 
         BaseItem? resolvedItem;
         try
@@ -185,13 +230,48 @@ public class ItemWatchProgressService : IItemWatchProgressService
             return false;
         }
 
-        if (resolvedItem is Movie or Episode)
+        if (resolvedItem is Movie movie)
         {
-            item = resolvedItem;
+            item = movie;
+            context = new OverlayItemContext
+            {
+                RunTimeTicks = movie.RunTimeTicks ?? 0,
+                ProgressItemIds = new[] { itemId }
+            };
+            return true;
+        }
+
+        if (resolvedItem is Episode episode)
+        {
+            item = episode;
+            context = new OverlayItemContext
+            {
+                RunTimeTicks = episode.RunTimeTicks ?? 0,
+                ProgressItemIds = new[] { itemId }
+            };
+            return true;
+        }
+
+        if (resolvedItem is Season season)
+        {
+            item = season;
+            context = new OverlayItemContext
+            {
+                RunTimeTicks = 0,
+                ProgressItemIds = GetEpisodeIds(season, currentUserId)
+            };
             return true;
         }
 
         return false;
+    }
+
+    private List<Guid> GetEpisodeIds(Season season, Guid userId)
+    {
+        var user = _userManager.GetUserById(userId);
+        return season.GetEpisodes(user, new DtoOptions(true), shouldIncludeMissingEpisodes: true)
+            .Select(episode => episode.Id)
+            .ToList();
     }
 
     private static WatchProgressDto MapWatchProgress(UserData userData)
@@ -203,6 +283,40 @@ public class ItemWatchProgressService : IItemWatchProgressService
         };
     }
 
+    private static WatchProgressDto MergeWatchProgress(WatchProgressDto existing, WatchProgressDto incoming)
+    {
+        if (incoming.Played)
+        {
+            return incoming;
+        }
+
+        if (existing.Played)
+        {
+            return existing;
+        }
+
+        return incoming.PlaybackPositionTicks > existing.PlaybackPositionTicks
+            ? incoming
+            : existing;
+    }
+
+    private static MemberWatchProgress MergeMemberProgress(MemberWatchProgress existing, MemberWatchProgress incoming)
+    {
+        if (incoming.Played)
+        {
+            return incoming;
+        }
+
+        if (existing.Played)
+        {
+            return existing;
+        }
+
+        return incoming.PlaybackPositionTicks > existing.PlaybackPositionTicks
+            ? incoming
+            : existing;
+    }
+
     private static bool HasStartedWatching(UserData userData)
     {
         return userData.Played
@@ -212,6 +326,13 @@ public class ItemWatchProgressService : IItemWatchProgressService
     }
 
     private sealed record MemberWatchProgress(Guid UserId, bool Played, long PlaybackPositionTicks);
+
+    private sealed class OverlayItemContext
+    {
+        public long RunTimeTicks { get; init; }
+
+        public IReadOnlyList<Guid> ProgressItemIds { get; init; } = Array.Empty<Guid>();
+    }
 
     private sealed class ItemProgressSnapshot
     {

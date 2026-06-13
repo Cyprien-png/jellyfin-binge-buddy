@@ -5,7 +5,7 @@ using Jellyfin.Plugin.BingeBuddy.Api;
 namespace Jellyfin.Plugin.BingeBuddy.Abstractions;
 
 /// <summary>
-/// Determines which group members have started watching media items.
+/// Determines which group members have started watching media items, episodes, or season episodes.
 /// </summary>
 public interface IItemWatchProgressService
 {
