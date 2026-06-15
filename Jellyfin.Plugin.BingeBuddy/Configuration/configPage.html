@@ -334,7 +334,7 @@
 
                     var script = document.createElement('script');
                     script.id = 'binge-buddy-user-select-script';
-                    script.src = ApiClient.getUrl('BingeBuddy/js/userSelect.js');
+                    script.src = ApiClient.getUrl('BingeBuddy/js/components/userSelect/userSelect.js');
                     script.addEventListener('load', function () {
                         BingeBuddyUserSelect.ensureStyles();
                         resolve();

@@ -9,6 +9,10 @@
     let SCRIPT_LOADED = true;
 
     function getAssetUrl(path) {
+        if (window.BingeBuddyAssets) {
+            return BingeBuddyAssets.getUrl(path);
+        }
+
         if (typeof ApiClient !== 'undefined' && ApiClient.getUrl) {
             return ApiClient.getUrl('BingeBuddy/js/' + path);
         }
@@ -118,7 +122,7 @@
         let link = document.createElement('link');
         link.id = STYLES_ID;
         link.rel = 'stylesheet';
-        link.href = getAssetUrl('userSelect.css');
+        link.href = getAssetUrl('components/userSelect/userSelect.css');
         document.head.appendChild(link);
     }
 

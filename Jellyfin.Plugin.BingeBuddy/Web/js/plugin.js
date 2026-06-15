@@ -27,6 +27,24 @@
         }, 50);
     }
 
+    function loadAssetUtils(callback) {
+        if (window.BingeBuddyAssets) {
+            callback();
+            return;
+        }
+
+        if (document.getElementById('binge-buddy-asset-utils-script')) {
+            document.getElementById('binge-buddy-asset-utils-script').addEventListener('load', callback, { once: true });
+            return;
+        }
+
+        let script = document.createElement('script');
+        script.id = 'binge-buddy-asset-utils-script';
+        script.src = ApiClient.getUrl('BingeBuddy/js/utils/assetUrl.js');
+        script.addEventListener('load', callback, { once: true });
+        document.head.appendChild(script);
+    }
+
     function loadStylesheet() {
         if (document.getElementById('binge-buddy-overlay-styles')) {
             return;
@@ -35,7 +53,7 @@
         let link = document.createElement('link');
         link.id = 'binge-buddy-overlay-styles';
         link.rel = 'stylesheet';
-        link.href = ApiClient.getUrl('BingeBuddy/js/overlays.css');
+        link.href = (window.BingeBuddyAssets ? BingeBuddyAssets.getUrl('components/overlays/overlays.css') : ApiClient.getUrl('BingeBuddy/js/components/overlays/overlays.css'));
         document.head.appendChild(link);
     }
 
@@ -46,7 +64,7 @@
 
         var script = document.createElement('script');
         script.id = 'binge-buddy-navbar-script';
-        script.src = ApiClient.getUrl('BingeBuddy/js/navbar.js');
+        script.src = (window.BingeBuddyAssets ? BingeBuddyAssets.getUrl('components/navbar/navbar.js') : ApiClient.getUrl('BingeBuddy/js/components/navbar/navbar.js'));
         document.head.appendChild(script);
     }
 
@@ -59,7 +77,7 @@
 
         let script = document.createElement('script');
         script.id = 'binge-buddy-overlay-script';
-        script.src = ApiClient.getUrl('BingeBuddy/js/overlays.js');
+        script.src = (window.BingeBuddyAssets ? BingeBuddyAssets.getUrl('components/overlays/overlays.js') : ApiClient.getUrl('BingeBuddy/js/components/overlays/overlays.js'));
         document.head.appendChild(script);
     }
 
@@ -94,10 +112,12 @@
     }
 
     runWhenApiClientReady(function () {
-        loadNavbarModule();
+        loadAssetUtils(function () {
+            loadNavbarModule();
 
-        if (!tryStart()) {
-            bindAuthWaiters();
-        }
+            if (!tryStart()) {
+                bindAuthWaiters();
+            }
+        });
     });
 })();

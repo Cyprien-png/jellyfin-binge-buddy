@@ -32,15 +32,16 @@
     <None Remove="Configuration\configPage.html" />
     <EmbeddedResource Include="Configuration\configPage.html" />
     <EmbeddedResource Include="Web\js\plugin.js" />
-    <EmbeddedResource Include="Web\js\overlays.js" />
-    <EmbeddedResource Include="Web\js\overlays.css" />
-    <EmbeddedResource Include="Web\js\navbar.js" />
-    <EmbeddedResource Include="Web\js\navbar.css" />
-    <EmbeddedResource Include="Web\js\dialog.js" />
-    <EmbeddedResource Include="Web\js\dialog.css" />
-    <EmbeddedResource Include="Web\js\userSelect.js" />
-    <EmbeddedResource Include="Web\js\userSelect.css" />
-    <EmbeddedResource Include="Web\js\watchTogetherSession.js" />
+    <EmbeddedResource Include="Web\js\utils\assetUrl.js" />
+    <EmbeddedResource Include="Web\js\components\navbar\navbar.js" />
+    <EmbeddedResource Include="Web\js\components\navbar\navbar.css" />
+    <EmbeddedResource Include="Web\js\components\dialog\dialog.js" />
+    <EmbeddedResource Include="Web\js\components\dialog\dialog.css" />
+    <EmbeddedResource Include="Web\js\components\userSelect\userSelect.js" />
+    <EmbeddedResource Include="Web\js\components\userSelect\userSelect.css" />
+    <EmbeddedResource Include="Web\js\components\overlays\overlays.js" />
+    <EmbeddedResource Include="Web\js\components\overlays\overlays.css" />
+    <EmbeddedResource Include="Web\js\services\watchTogetherSession.js" />
   </ItemGroup>
 
 </Project>

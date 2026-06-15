@@ -21,6 +21,10 @@
     }
 
     function getAssetUrl(path) {
+        if (window.BingeBuddyAssets) {
+            return BingeBuddyAssets.getUrl(path);
+        }
+
         if (typeof ApiClient !== 'undefined' && ApiClient.getUrl) {
             return ApiClient.getUrl('BingeBuddy/js/' + path);
         }
@@ -42,7 +46,7 @@
         let link = document.createElement('link');
         link.id = FALLBACK_STYLES_ID;
         link.rel = 'stylesheet';
-        link.href = getAssetUrl('dialog.css');
+        link.href = getAssetUrl('components/dialog/dialog.css');
         document.head.appendChild(link);
     }
 
@@ -295,13 +299,13 @@
     }
 
     function ensureUserSelectModule() {
-        return loadScriptModule('binge-buddy-user-select-script', 'userSelect.js').then(function () {
+        return loadScriptModule('binge-buddy-user-select-script', 'components/userSelect/userSelect.js').then(function () {
             BingeBuddyUserSelect.ensureStyles();
         });
     }
 
     function ensureWatchTogetherSessionModule() {
-        return loadScriptModule('binge-buddy-watch-together-session-script', 'watchTogetherSession.js');
+        return loadScriptModule('binge-buddy-watch-together-session-script', 'services/watchTogetherSession.js');
     }
 
     function renderWatchTogetherBuddies(container, buddies, options) {
