@@ -190,6 +190,12 @@ public class ItemWatchProgressService : IItemWatchProgressService
                     continue;
                 }
 
+                if (overlayContext.IsSeries)
+                {
+                    ApplySeriesRow(snapshot, row, currentUserId);
+                    continue;
+                }
+
                 if (row.UserId == currentUserId)
                 {
                     snapshot.CurrentUser = MergeWatchProgress(snapshot.CurrentUser, MapWatchProgress(row));
@@ -258,6 +264,37 @@ public class ItemWatchProgressService : IItemWatchProgressService
             : incoming;
     }
 
+    private static void ApplySeriesRow(
+        ItemProgressSnapshot snapshot,
+        UserData row,
+        Guid currentUserId)
+    {
+        if (row.UserId == currentUserId)
+        {
+            if (!HasStartedWatching(row))
+            {
+                return;
+            }
+
+            snapshot.CurrentUser = MergeWatchProgress(snapshot.CurrentUser, MapWatchProgress(row));
+            return;
+        }
+
+        if (!HasStartedWatching(row))
+        {
+            return;
+        }
+
+        var incoming = new MemberWatchProgress(
+            row.UserId,
+            row.Played,
+            row.PlaybackPositionTicks,
+            null,
+            0);
+
+        snapshot.Watchers[row.UserId] = incoming;
+    }
+
     private bool TryResolveOverlayItem(
         Guid itemId,
         Guid currentUserId,
@@ -318,7 +355,28 @@ public class ItemWatchProgressService : IItemWatchProgressService
             return true;
         }
 
+        if (resolvedItem is Series series)
+        {
+            item = series;
+            var episodes = GetSeriesEpisodes(series, currentUserId);
+            context = new OverlayItemContext
+            {
+                IsSeries = true,
+                RunTimeTicks = 0,
+                ProgressItemIds = episodes.Select(episode => episode.Id).ToList()
+            };
+            return true;
+        }
+
         return false;
+    }
+
+    private List<BaseItem> GetSeriesEpisodes(Series series, Guid userId)
+    {
+        var user = _userManager.GetUserById(userId);
+        return series.GetEpisodes(user, new DtoOptions(true), shouldIncludeMissingEpisodes: true)
+            .Cast<BaseItem>()
+            .ToList();
     }
 
     private List<BaseItem> GetSeasonEpisodes(Season season, Guid userId)
@@ -491,6 +549,8 @@ public class ItemWatchProgressService : IItemWatchProgressService
     private sealed class OverlayItemContext
     {
         public bool IsSeason { get; init; }
+
+        public bool IsSeries { get; init; }
 
         public long RunTimeTicks { get; init; }
 
