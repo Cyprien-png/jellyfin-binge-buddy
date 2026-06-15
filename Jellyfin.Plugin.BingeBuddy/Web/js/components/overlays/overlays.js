@@ -5,13 +5,20 @@
         return;
     }
 
+    if (window.BingeBuddyWatchProgress) {
+        BingeBuddyWatchProgress.ensureStyles();
+    }
+
+    function getWatchProgress() {
+        return window.BingeBuddyWatchProgress || null;
+    }
+
     let CARD_SELECTOR = 'a.cardImageContainer.cardContent, div.listItemImage';
     let DETAIL_SECTION_SELECTOR = '.detailSection';
     let DETAIL_MOUNT_SELECTOR = '.detailPagePrimaryContent';
     let OVERLAY_CLASS = 'bb-watcher-stack';
     let DETAIL_BUDDIES_CLASS = 'bb-detail-buddies';
     let DETAIL_MOUNT_DATA_ATTR = 'bbDetailBuddiesItemId';
-    let TICKS_PER_SECOND = 10000000;
     let DETAIL_RETRY_MS = 150;
     let DETAIL_RETRY_MAX = 40;
     let pendingItemIds = new Set();
@@ -147,7 +154,8 @@
     }
 
     function parseWatchProgress(raw) {
-        if (!raw) {
+        let watchProgress = getWatchProgress();
+        if (!watchProgress) {
             return {
                 played: false,
                 playbackPositionTicks: 0,
@@ -156,16 +164,7 @@
             };
         }
 
-        let episodeIndexNumber = raw.episodeIndexNumber ?? raw.EpisodeIndexNumber;
-
-        return {
-            played: !!(raw.played || raw.Played),
-            playbackPositionTicks: Number(raw.playbackPositionTicks || raw.PlaybackPositionTicks || 0),
-            episodeIndexNumber: episodeIndexNumber === undefined || episodeIndexNumber === null
-                ? null
-                : Number(episodeIndexNumber),
-            episodeRunTimeTicks: Number(raw.episodeRunTimeTicks || raw.EpisodeRunTimeTicks || 0)
-        };
+        return watchProgress.parseProgress(raw);
     }
 
     function parseWatcher(raw) {
@@ -210,124 +209,42 @@
         };
     }
 
-    function getProgressRuntime(progress, fallbackRunTimeTicks) {
-        if (progress && progress.episodeRunTimeTicks > 0) {
-            return progress.episodeRunTimeTicks;
-        }
-
-        return fallbackRunTimeTicks || 0;
-    }
-
-    function getProgressPercent(played, playbackPositionTicks, runTimeTicks) {
-        if (played) {
-            return 100;
-        }
-
-        if (!runTimeTicks || runTimeTicks <= 0) {
-            return 0;
-        }
-
-        return Math.min(100, Math.round((playbackPositionTicks / runTimeTicks) * 100));
-    }
-
-    function formatWatchedDuration(playbackPositionTicks) {
-        let totalSeconds = Math.max(0, Math.floor(playbackPositionTicks / TICKS_PER_SECOND));
-        let hours = Math.floor(totalSeconds / 3600);
-        let minutes = Math.floor((totalSeconds % 3600) / 60);
-        let seconds = totalSeconds % 60;
-
-        if (hours >= 1) {
-            return hours + 'h ' + minutes + 'm ' + seconds + 's';
-        }
-
-        return minutes + 'm ' + seconds + 's';
-    }
-
-    function formatProgressStatus(played, playbackPositionTicks, runTimeTicks) {
-        if (played) {
-            return 'Finished';
-        }
-
-        let watched = formatWatchedDuration(playbackPositionTicks);
-        let percent = getProgressPercent(false, playbackPositionTicks, runTimeTicks);
-        return watched + ' watched (' + percent + '%)';
-    }
-
-    function createProgressRow(labelText, progress, runTimeTicks, variant, options) {
-        options = options || {};
-        let episodeIndexNumber = options.episodeIndexNumber;
-        let showEpisodeLine = options.showEpisodeLine;
-
-        let row = document.createElement('div');
-        row.className = 'bb-detail-progress-row';
-
-        let meta = document.createElement('div');
-        meta.className = 'bb-detail-progress-meta';
-
-        let label = document.createElement('span');
-        label.className = 'bb-detail-progress-label';
-        label.textContent = labelText;
-
-        let status = document.createElement('span');
-        status.className = 'bb-detail-progress-status';
-        status.textContent = formatProgressStatus(
-            progress.played,
-            progress.playbackPositionTicks,
-            runTimeTicks
-        );
-
-        meta.appendChild(label);
-        meta.appendChild(status);
-        row.appendChild(meta);
-
-        if (showEpisodeLine && episodeIndexNumber !== null && episodeIndexNumber !== undefined) {
-            let episodeLine = document.createElement('div');
-            episodeLine.className = 'bb-detail-progress-episode';
-            episodeLine.textContent = 'Episode ' + episodeIndexNumber;
-            row.appendChild(episodeLine);
-        }
-
-        let track = document.createElement('div');
-        track.className = 'bb-detail-progress-track';
-
-        let fill = document.createElement('div');
-        fill.className = 'bb-detail-progress-fill bb-detail-progress-fill-' + variant;
-        fill.style.width = getProgressPercent(
-            progress.played,
-            progress.playbackPositionTicks,
-            runTimeTicks
-        ) + '%';
-
-        track.appendChild(fill);
-        row.appendChild(track);
-
-        return row;
-    }
-
     function createDetailProgressSection(currentUser, watcher, overlay) {
+        let watchProgress = getWatchProgress();
+        if (!watchProgress) {
+            let fallback = document.createElement('div');
+            fallback.className = 'bb-detail-progress';
+            return fallback;
+        }
+
+        watchProgress.ensureStyles();
+
         let section = document.createElement('div');
         section.className = 'bb-detail-progress';
 
-        let heading = document.createElement('div');
-        heading.className = 'bb-detail-progress-heading';
-        heading.textContent = 'Progress';
-        section.appendChild(heading);
+        section.appendChild(watchProgress.createSectionHeading('Progress'));
 
         let isSeason = overlay.isSeason;
         let youRuntime = isSeason
-            ? getProgressRuntime(currentUser, 0)
+            ? watchProgress.getProgressRuntime(currentUser, 0)
             : overlay.runTimeTicks;
         let themRuntime = isSeason
-            ? getProgressRuntime(watcher, 0)
+            ? watchProgress.getProgressRuntime(watcher, 0)
             : overlay.runTimeTicks;
 
-        section.appendChild(createProgressRow('You', currentUser, youRuntime, 'you', {
-            showEpisodeLine: isSeason,
-            episodeIndexNumber: isSeason ? currentUser.episodeIndexNumber : null
+        section.appendChild(watchProgress.createRow({
+            labelText: 'You',
+            progress: currentUser,
+            runTimeTicks: youRuntime,
+            variant: 'you',
+            showEpisodeLine: isSeason
         }));
-        section.appendChild(createProgressRow('Them', watcher, themRuntime, 'them', {
-            showEpisodeLine: isSeason,
-            episodeIndexNumber: isSeason ? watcher.episodeIndexNumber : null
+        section.appendChild(watchProgress.createRow({
+            labelText: 'Them',
+            progress: watcher,
+            runTimeTicks: themRuntime,
+            variant: 'them',
+            showEpisodeLine: isSeason
         }));
 
         return section;
