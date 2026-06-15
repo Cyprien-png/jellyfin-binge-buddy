@@ -45,6 +45,27 @@
         document.head.appendChild(script);
     }
 
+    function loadPlaybackStopService() {
+        if (document.getElementById('binge-buddy-playback-stop-script')) {
+            if (window.BingeBuddyPlaybackStopService) {
+                BingeBuddyPlaybackStopService.start();
+            }
+            return;
+        }
+
+        let script = document.createElement('script');
+        script.id = 'binge-buddy-playback-stop-script';
+        script.src = (window.BingeBuddyAssets
+            ? BingeBuddyAssets.getUrl('services/playbackStopService.js')
+            : ApiClient.getUrl('BingeBuddy/js/services/playbackStopService.js'));
+        script.addEventListener('load', function () {
+            if (window.BingeBuddyPlaybackStopService) {
+                BingeBuddyPlaybackStopService.start();
+            }
+        }, { once: true });
+        document.head.appendChild(script);
+    }
+
     function loadPlaybackGateService() {
         if (document.getElementById('binge-buddy-playback-gate-script')) {
             if (window.BingeBuddyPlaybackGateService) {
@@ -132,6 +153,7 @@
         window[BOOTSTRAP_FLAG] = true;
         loadOverlayModule();
         loadPlaybackGateService();
+        loadPlaybackStopService();
         return true;
     }
 

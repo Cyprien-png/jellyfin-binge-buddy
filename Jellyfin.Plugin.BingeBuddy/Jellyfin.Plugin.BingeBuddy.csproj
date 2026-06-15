@@ -45,7 +45,9 @@
     <EmbeddedResource Include="Web\js\components\overlays\overlays.js" />
     <EmbeddedResource Include="Web\js\components\overlays\overlays.css" />
     <EmbeddedResource Include="Web\js\services\watchTogetherSession.js" />
+    <EmbeddedResource Include="Web\js\services\watchTogetherContext.js" />
     <EmbeddedResource Include="Web\js\services\playbackGateService.js" />
+    <EmbeddedResource Include="Web\js\services\playbackStopService.js" />
   </ItemGroup>
 
 </Project>

@@ -21,6 +21,10 @@
         if (window.BingeBuddyPlaybackGateService) {
             window.BingeBuddyPlaybackGateService.onJellyfinInstanceDiscovered(kind, instance);
         }
+
+        if (window.BingeBuddyPlaybackStopService) {
+            window.BingeBuddyPlaybackStopService.onJellyfinInstanceDiscovered(kind, instance);
+        }
     }
 
     function looksLikePluginManager(obj) {
