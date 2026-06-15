@@ -24,6 +24,11 @@ public class UserItemDataSnapshot
     public DateTime? LastPlayedDate { get; set; }
 
     /// <summary>
+    /// Gets or sets when this watch-together progress was recorded.
+    /// </summary>
+    public DateTime? WatchedAt { get; set; }
+
+    /// <summary>
     /// Gets or sets a value indicating whether the item is played.
     /// </summary>
     public bool Played { get; set; }
@@ -52,6 +57,7 @@ public class UserItemDataSnapshot
             PlaybackPositionTicks = userData.PlaybackPositionTicks,
             PlayCount = userData.PlayCount,
             LastPlayedDate = userData.LastPlayedDate,
+            WatchedAt = userData.LastPlayedDate ?? DateTime.UtcNow,
             Played = userData.Played,
             AudioStreamIndex = userData.AudioStreamIndex,
             SubtitleStreamIndex = userData.SubtitleStreamIndex
