@@ -37,6 +37,8 @@
     <EmbeddedResource Include="Web\js\components\navbar\navbar.css" />
     <EmbeddedResource Include="Web\js\components\dialog\dialog.js" />
     <EmbeddedResource Include="Web\js\components\dialog\dialog.css" />
+    <EmbeddedResource Include="Web\js\components\watchTogether\watchTogetherDialog.js" />
+    <EmbeddedResource Include="Web\js\components\watchTogether\watchTogetherDialog.css" />
     <EmbeddedResource Include="Web\js\components\userSelect\userSelect.js" />
     <EmbeddedResource Include="Web\js\components\userSelect\userSelect.css" />
     <EmbeddedResource Include="Web\js\components\overlays\overlays.js" />

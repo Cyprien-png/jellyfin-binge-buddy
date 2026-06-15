@@ -38,7 +38,7 @@
             : null;
     }
 
-    function loadDialogStyles() {
+    function ensureStyles() {
         if (document.getElementById(FALLBACK_STYLES_ID)) {
             return;
         }
@@ -51,11 +51,7 @@
     }
 
     function normalizeButtons(buttons) {
-        if (!buttons || !buttons.length) {
-            return [{ id: 'continue', name: 'Continue', type: 'submit' }];
-        }
-
-        return buttons;
+        return buttons && buttons.length ? buttons : [];
     }
 
     function buildButtonsHtml(buttons) {
@@ -91,19 +87,21 @@
         }
     }
 
-    let DEFAULT_DIALOG_WIDTH = 672;
+    function resolveDialogWidth(buttonCount, options) {
+        if (options.maxWidth) {
+            return Math.min(options.maxWidth, window.innerWidth - 50);
+        }
 
-    function resolveDialogWidth(buttonCount, preferredWidth) {
-        if (preferredWidth) {
-            return Math.min(preferredWidth, window.innerWidth - 50);
+        if (options.preferredWidth) {
+            return Math.min(options.preferredWidth, window.innerWidth - 50);
         }
 
         let calculated = Math.min((buttonCount * 150) + 200, window.innerWidth - 50);
-        return Math.max(calculated, DEFAULT_DIALOG_WIDTH);
+        return Math.max(calculated, 320);
     }
 
     function showJellyfinDialog(options) {
-        loadDialogStyles();
+        ensureStyles();
 
         let helper = getJellyfinDialogHelper();
         let buttons = normalizeButtons(options.buttons);
@@ -130,18 +128,18 @@
         dlg.innerHTML =
             '<div class="formDialogContent no-grow bb-form-dialog-content">' +
                 '<div class="formDialogHeader">' +
-                    '<h3 class="formDialogHeaderTitle">' + escapeHtml(title) + '</h3>' +
+                    (title ? '<h3 class="formDialogHeaderTitle">' + escapeHtml(title) + '</h3>' : '<h3 class="formDialogHeaderTitle hide"></h3>') +
                 '</div>' +
                 '<div class="dialogContentInner scrollContainer">' +
                     '<div class="text' + (bodyHtml ? '' : ' hide') + '">' + bodyHtml + '</div>' +
                     (hasCustomContent ? '<div class="bb-dialog-custom"></div>' : '') +
                 '</div>' +
-                '<div class="formDialogFooter">' + buildButtonsHtml(buttons) + '</div>' +
+                (buttons.length ? '<div class="formDialogFooter">' + buildButtonsHtml(buttons) + '</div>' : '') +
             '</div>';
 
         let formDialogContent = dlg.querySelector('.formDialogContent');
         if (formDialogContent) {
-            let maxWidth = options.maxWidth || resolveDialogWidth(buttons.length, options.preferredWidth);
+            let maxWidth = resolveDialogWidth(buttons.length, options);
             formDialogContent.style.maxWidth = maxWidth + 'px';
             formDialogContent.style.width = 'min(100vw - 2rem, ' + maxWidth + 'px)';
         }
@@ -166,11 +164,11 @@
     }
 
     function showFallbackDialog(options) {
-        loadDialogStyles();
+        ensureStyles();
 
         let buttons = normalizeButtons(options.buttons);
         let title = options.title || '';
-        let bodyText = options.text || options.message || '';
+        let bodyHtml = options.html || options.text || options.message || '';
         let hasCustomContent = typeof options.renderContent === 'function' || options.content instanceof HTMLElement;
 
         return new Promise(function (resolve) {
@@ -192,10 +190,10 @@
             let body = document.createElement('div');
             body.className = 'bb-dialog-fallback-body';
 
-            if (bodyText) {
-                let description = document.createElement('p');
+            if (bodyHtml) {
+                let description = document.createElement('div');
                 description.className = 'bb-dialog-fallback-text';
-                description.textContent = bodyText;
+                description.innerHTML = bodyHtml;
                 body.appendChild(description);
             }
 
@@ -243,9 +241,16 @@
                 }
             });
 
-            panel.appendChild(header);
+            if (title) {
+                panel.appendChild(header);
+            }
+
             panel.appendChild(body);
-            panel.appendChild(footer);
+
+            if (buttons.length) {
+                panel.appendChild(footer);
+            }
+
             backdrop.appendChild(panel);
             document.body.appendChild(backdrop);
             document.addEventListener('keydown', onKeyDown);
@@ -271,110 +276,8 @@
         return showFallbackDialog(options);
     }
 
-    function loadScriptModule(scriptId, scriptPath) {
-        return new Promise(function (resolve, reject) {
-            let globalReady = scriptId === 'binge-buddy-user-select-script'
-                ? function () { return window.BingeBuddyUserSelect; }
-                : function () { return window.BingeBuddyWatchTogetherSession; };
-
-            if (globalReady()) {
-                resolve();
-                return;
-            }
-
-            let existing = document.getElementById(scriptId);
-            if (existing) {
-                existing.addEventListener('load', function () { resolve(); }, { once: true });
-                existing.addEventListener('error', reject, { once: true });
-                return;
-            }
-
-            let script = document.createElement('script');
-            script.id = scriptId;
-            script.src = getAssetUrl(scriptPath);
-            script.addEventListener('load', function () { resolve(); }, { once: true });
-            script.addEventListener('error', reject, { once: true });
-            document.head.appendChild(script);
-        });
-    }
-
-    function ensureUserSelectModule() {
-        return loadScriptModule('binge-buddy-user-select-script', 'components/userSelect/userSelect.js').then(function () {
-            BingeBuddyUserSelect.ensureStyles();
-        });
-    }
-
-    function ensureWatchTogetherSessionModule() {
-        return loadScriptModule('binge-buddy-watch-together-session-script', 'services/watchTogetherSession.js');
-    }
-
-    function renderWatchTogetherBuddies(container, buddies, options) {
-        let scroll = document.createElement('div');
-        scroll.className = 'bb-watch-together-user-scroll';
-
-        let list = document.createElement('div');
-        list.className = 'bb-users-list checkboxListContainer';
-
-        scroll.appendChild(list);
-        container.appendChild(scroll);
-
-        BingeBuddyUserSelect.render(list, buddies, {
-            selectedUserIds: options && options.selectedUserIds,
-            isSelected: options && options.isSelected,
-            onChange: options && options.onChange,
-            emptyTitle: 'No buddies found',
-            emptyMessage: ''
-        });
-
-        return list;
-    }
-
-    function showWatchTogether(options) {
-        let defaults = {
-            title: 'Binge Buddy: Watch together',
-            text: 'Currently watching media with your buddies on this device ?<br> Select who is watching with you to sync their progress.',
-            buttons: [{ id: 'continue', name: 'Continue', type: 'submit' }],
-            maxWidth: DEFAULT_DIALOG_WIDTH
-        };
-
-        let merged = Object.assign({}, defaults, options || {});
-        let buddyListElement = null;
-
-        return Promise.all([
-            ensureUserSelectModule(),
-            ensureWatchTogetherSessionModule()
-        ])
-            .then(function () {
-                return BingeBuddyUserSelect.loadBuddies();
-            })
-            .then(function (buddies) {
-                let storedSelection = BingeBuddyWatchTogetherSession.getSelectedUserIds();
-                let initialSelection = merged.selectedUserIds || BingeBuddyWatchTogetherSession.filterToKnownBuddies(storedSelection, buddies);
-
-                merged.renderContent = function (container) {
-                    buddyListElement = renderWatchTogetherBuddies(container, buddies, {
-                        selectedUserIds: initialSelection
-                    });
-                };
-
-                return show(merged).then(function (result) {
-                    if (result === 'continue' && buddyListElement) {
-                        let selectedUserIds = BingeBuddyUserSelect.getSelectedUserIds(buddyListElement);
-                        BingeBuddyWatchTogetherSession.setSelectedUserIds(selectedUserIds);
-                    }
-
-                    return {
-                        action: result,
-                        selectedUserIds: result === 'continue' && buddyListElement
-                            ? BingeBuddyUserSelect.getSelectedUserIds(buddyListElement)
-                            : BingeBuddyWatchTogetherSession.getSelectedUserIds()
-                    };
-                });
-            });
-    }
-
     window.BingeBuddyDialog = {
         show: show,
-        showWatchTogether: showWatchTogether
+        ensureStyles: ensureStyles
     };
 })();

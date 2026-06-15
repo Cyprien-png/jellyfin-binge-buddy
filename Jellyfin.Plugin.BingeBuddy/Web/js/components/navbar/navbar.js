@@ -35,21 +35,21 @@
         document.head.appendChild(link);
     }
 
-    function loadDialogModule(callback) {
-        if (window.BingeBuddyDialog) {
+    function loadWatchTogetherDialogModule(callback) {
+        if (window.BingeBuddyWatchTogetherDialog) {
             callback();
             return;
         }
 
-        let existing = document.getElementById('binge-buddy-dialog-script');
+        let existing = document.getElementById('binge-buddy-watch-together-dialog-script');
         if (existing) {
             existing.addEventListener('load', callback, { once: true });
             return;
         }
 
         let script = document.createElement('script');
-        script.id = 'binge-buddy-dialog-script';
-        script.src = getAssetUrl('components/dialog/dialog.js');
+        script.id = 'binge-buddy-watch-together-dialog-script';
+        script.src = getAssetUrl('components/watchTogether/watchTogetherDialog.js');
         script.addEventListener('load', callback, { once: true });
         document.head.appendChild(script);
     }
@@ -75,9 +75,9 @@
             event.preventDefault();
             event.stopPropagation();
 
-            loadDialogModule(function () {
-                if (window.BingeBuddyDialog) {
-                    window.BingeBuddyDialog.showWatchTogether();
+            loadWatchTogetherDialogModule(function () {
+                if (window.BingeBuddyWatchTogetherDialog) {
+                    window.BingeBuddyWatchTogetherDialog.show();
                 }
             });
         });
