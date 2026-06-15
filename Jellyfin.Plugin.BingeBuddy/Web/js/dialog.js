@@ -48,7 +48,7 @@
 
     function normalizeButtons(buttons) {
         if (!buttons || !buttons.length) {
-            return [{ id: 'close', name: 'Close', type: 'submit' }];
+            return [{ id: 'close', name: 'Continue', type: 'submit' }];
         }
 
         return buttons;
@@ -114,7 +114,7 @@
 
         let dlg = helper.createDialog(dialogOptions);
         let title = options.title || '';
-        let bodyHtml = options.html || escapeHtml(options.text || options.message || '');
+        let bodyHtml = options.html || options.text || options.message || '';
         let hasCustomContent = typeof options.renderContent === 'function' || options.content instanceof HTMLElement;
 
         dlg.classList.add('formDialog');
@@ -267,15 +267,84 @@
         return showFallbackDialog(options);
     }
 
+    function ensureUserSelectModule() {
+        return new Promise(function (resolve, reject) {
+            if (window.BingeBuddyUserSelect) {
+                BingeBuddyUserSelect.ensureStyles();
+                resolve();
+                return;
+            }
+
+            let existing = document.getElementById('binge-buddy-user-select-script');
+            if (existing) {
+                existing.addEventListener('load', function () {
+                    BingeBuddyUserSelect.ensureStyles();
+                    resolve();
+                }, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+                return;
+            }
+
+            let script = document.createElement('script');
+            script.id = 'binge-buddy-user-select-script';
+            script.src = getAssetUrl('userSelect.js');
+            script.addEventListener('load', function () {
+                BingeBuddyUserSelect.ensureStyles();
+                resolve();
+            }, { once: true });
+            script.addEventListener('error', reject, { once: true });
+            document.head.appendChild(script);
+        });
+    }
+
+    function renderWatchTogetherBuddies(container, buddies, options) {
+        let scroll = document.createElement('div');
+        scroll.className = 'bb-watch-together-user-scroll';
+
+        let list = document.createElement('div');
+        list.className = 'bb-users-list checkboxListContainer';
+
+        scroll.appendChild(list);
+        container.appendChild(scroll);
+
+        BingeBuddyUserSelect.render(list, buddies, {
+            selectedUserIds: options && options.selectedUserIds,
+            isSelected: options && options.isSelected,
+            onChange: options && options.onChange,
+            emptyTitle: 'No buddies found',
+            emptyMessage: ''
+        });
+
+        return list;
+    }
+
     function showWatchTogether(options) {
         let defaults = {
             title: 'Binge Buddy: Watch together',
-            text: 'Currently watching media with your buddies on this device. Select who is watching with you to sync their progress.',
-            buttons: [{ id: 'close', name: 'Close', type: 'submit' }],
+            text: 'Currently watching media with your buddies on this device ?<br> Select who is watching with you to sync their progress.',
+            buttons: [{ id: 'close', name: 'Continue', type: 'submit' }],
             maxWidth: DEFAULT_DIALOG_WIDTH
         };
 
-        return show(Object.assign({}, defaults, options || {}));
+        let merged = Object.assign({}, defaults, options || {});
+
+        return ensureUserSelectModule()
+            .then(function () {
+                return BingeBuddyUserSelect.loadBuddies();
+            })
+            .then(function (buddies) {
+                let buddyOptions = {
+                    selectedUserIds: merged.selectedUserIds,
+                    isSelected: merged.isSelected,
+                    onChange: merged.onBuddyChange || merged.onChange
+                };
+
+                merged.renderContent = function (container) {
+                    renderWatchTogetherBuddies(container, buddies, buddyOptions);
+                };
+
+                return show(merged);
+            });
     }
 
     window.BingeBuddyDialog = {

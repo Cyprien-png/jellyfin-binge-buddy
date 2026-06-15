@@ -165,6 +165,22 @@
         });
     }
 
+    function loadBuddies() {
+        return ApiClient.ajax({
+            type: 'GET',
+            url: ApiClient.getUrl('BingeBuddy/Buddies'),
+            dataType: 'json'
+        }).then(function (users) {
+            if (!Array.isArray(users)) {
+                return [];
+            }
+
+            return users.map(normalizeUser);
+        }).catch(function () {
+            return [];
+        });
+    }
+
     function createEmptyState(options) {
         let empty = document.createElement('div');
         empty.className = 'bb-user-select-empty';
@@ -173,11 +189,19 @@
         title.className = 'bb-user-select-empty-title';
         title.textContent = options.emptyTitle || 'No users found';
 
-        let message = document.createElement('p');
-        message.textContent = options.emptyMessage || 'Add users in the Jellyfin dashboard first.';
-
         empty.appendChild(title);
-        empty.appendChild(message);
+
+        let messageText = options.emptyMessage;
+        if (messageText === undefined) {
+            messageText = 'Add users in the Jellyfin dashboard first.';
+        }
+
+        if (messageText) {
+            let message = document.createElement('p');
+            message.textContent = messageText;
+            empty.appendChild(message);
+        }
+
         return empty;
     }
 
@@ -286,6 +310,7 @@
         normalizeGuid: normalizeGuid,
         normalizeUser: normalizeUser,
         loadUsers: loadUsers,
+        loadBuddies: loadBuddies,
         ensureStyles: ensureStyles,
         ensureReady: ensureReady,
         createRow: createRow,

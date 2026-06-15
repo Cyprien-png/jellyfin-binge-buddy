@@ -21,18 +21,26 @@ public class BingeBuddyClientController : ControllerBase
     private const string JellyfinUserIdClaim = "Jellyfin-UserId";
 
     private readonly IBingeBuddyOverlayService _overlayService;
+    private readonly IGroupMembershipService _groupMembershipService;
+    private readonly IUserProfileService _userProfileService;
     private readonly ILogger<BingeBuddyClientController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BingeBuddyClientController"/> class.
     /// </summary>
     /// <param name="overlayService">The overlay service.</param>
+    /// <param name="groupMembershipService">The group membership service.</param>
+    /// <param name="userProfileService">The user profile service.</param>
     /// <param name="logger">The logger.</param>
     public BingeBuddyClientController(
         IBingeBuddyOverlayService overlayService,
+        IGroupMembershipService groupMembershipService,
+        IUserProfileService userProfileService,
         ILogger<BingeBuddyClientController> logger)
     {
         _overlayService = overlayService;
+        _groupMembershipService = groupMembershipService;
+        _userProfileService = userProfileService;
         _logger = logger;
     }
 
@@ -66,6 +74,42 @@ public class BingeBuddyClientController : ControllerBase
         }
 
         return ServeEmbeddedResource(resourceName, "application/javascript");
+    }
+
+    /// <summary>
+    /// Gets binge buddies (group mates) for the authenticated user.
+    /// </summary>
+    /// <returns>Buddies with profile image metadata.</returns>
+    [HttpGet("Buddies")]
+    [Authorize]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult<IReadOnlyList<GroupUserDto>> GetBuddies()
+    {
+        var userId = GetAuthenticatedUserId();
+        if (userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var buddyIds = _groupMembershipService.GetVisibleMemberIds(userId);
+            var buddies = buddyIds
+                .Select(id => _userProfileService.MapUser(id))
+                .Where(user => user is not null)
+                .Select(user => user!)
+                .OrderBy(user => user.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return Ok(buddies);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load buddies for user {UserId}", userId);
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
     }
 
     /// <summary>
