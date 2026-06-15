@@ -39,6 +39,17 @@
         document.head.appendChild(link);
     }
 
+    function loadNavbarModule() {
+        if (document.getElementById('binge-buddy-navbar-script')) {
+            return;
+        }
+
+        var script = document.createElement('script');
+        script.id = 'binge-buddy-navbar-script';
+        script.src = ApiClient.getUrl('BingeBuddy/js/navbar.js');
+        document.head.appendChild(script);
+    }
+
     function loadOverlayModule() {
         if (document.getElementById('binge-buddy-overlay-script')) {
             return;
@@ -83,6 +94,8 @@
     }
 
     runWhenApiClientReady(function () {
+        loadNavbarModule();
+
         if (!tryStart()) {
             bindAuthWaiters();
         }

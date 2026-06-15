@@ -43,15 +43,6 @@
     margin-top: 1.5em;
 }
 
-.bb-detail-buddies-season {
-    margin-top: 0;
-    margin-bottom: 1.5em;
-}
-
-.detailPagePrimaryContent > .bb-detail-buddies {
-    margin-bottom: 1.25em;
-}
-
 .bb-detail-buddies-grid {
     display: flex;
     flex-wrap: wrap;
@@ -71,11 +62,6 @@
     border-radius: 0.5rem;
     background: rgba(255, 255, 255, 0.04);
     box-sizing: border-box;
-}
-
-.bb-detail-buddies-season .bb-detail-buddy-card {
-    width: 22rem;
-    max-width: 22rem;
 }
 
 .bb-detail-buddy-avatar {
@@ -150,13 +136,6 @@
     font-size: 0.74rem;
     font-weight: 600;
     opacity: 0.9;
-}
-
-.bb-detail-progress-episode {
-    font-size: 0.72rem;
-    font-weight: 600;
-    line-height: 1.2;
-    opacity: 0.88;
 }
 
 .bb-detail-progress-status {
