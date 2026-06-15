@@ -7,6 +7,7 @@
 
     let isStarted = false;
     let stopHandlersBound = false;
+    let historyModulePromise = null;
 
     function getContext() {
         return window.BingeBuddyWatchTogetherContext;
@@ -20,6 +21,38 @@
 
     function getMediaTypeFromState(state) {
         return state && state.NowPlayingItem && state.NowPlayingItem.MediaType;
+    }
+
+    function ensureHistoryModule() {
+        if (window.BingeBuddyWatchTogetherHistoryService) {
+            return Promise.resolve();
+        }
+
+        if (historyModulePromise) {
+            return historyModulePromise;
+        }
+
+        historyModulePromise = new Promise(function (resolve, reject) {
+            let scriptId = 'binge-buddy-watch-together-history-script';
+            let existing = document.getElementById(scriptId);
+
+            if (existing) {
+                existing.addEventListener('load', function () { resolve(); }, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+                return;
+            }
+
+            let script = document.createElement('script');
+            script.id = scriptId;
+            script.src = (window.BingeBuddyAssets
+                ? BingeBuddyAssets.getUrl('services/watchTogetherHistoryService.js')
+                : ApiClient.getUrl('BingeBuddy/js/services/watchTogetherHistoryService.js'));
+            script.addEventListener('load', function () { resolve(); }, { once: true });
+            script.addEventListener('error', reject, { once: true });
+            document.head.appendChild(script);
+        });
+
+        return historyModulePromise;
     }
 
     function handleMediaStopped(state) {
@@ -43,7 +76,11 @@
                     return;
                 }
 
-                console.log('[BingeBuddy] Watched with: ' + activeBuddyIds.join(', '));
+                return ensureHistoryModule().then(function () {
+                    if (window.BingeBuddyWatchTogetherHistoryService) {
+                        BingeBuddyWatchTogetherHistoryService.queueProgress(state, activeBuddyIds);
+                    }
+                });
             })
             .catch(function (error) {
                 console.warn('[BingeBuddy] Watch together stop handler failed.', error);

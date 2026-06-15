@@ -20,6 +20,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<IUserProfileService, UserProfileService>();
         serviceCollection.AddSingleton<IItemWatchProgressService, ItemWatchProgressService>();
         serviceCollection.AddSingleton<IBingeBuddyOverlayService, BingeBuddyOverlayService>();
+        serviceCollection.AddSingleton<IWatchTogetherHistoryService, WatchTogetherHistoryService>();
         serviceCollection.AddSingleton<WebScriptInjector>();
         serviceCollection.AddSingleton<IStartupFilter, BingeBuddyScriptInjectorStartup>();
     }

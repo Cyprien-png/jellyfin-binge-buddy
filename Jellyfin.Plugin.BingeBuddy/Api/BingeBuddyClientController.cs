@@ -23,6 +23,7 @@ public class BingeBuddyClientController : ControllerBase
     private readonly IBingeBuddyOverlayService _overlayService;
     private readonly IGroupMembershipService _groupMembershipService;
     private readonly IUserProfileService _userProfileService;
+    private readonly IWatchTogetherHistoryService _watchTogetherHistoryService;
     private readonly ILogger<BingeBuddyClientController> _logger;
 
     /// <summary>
@@ -31,16 +32,19 @@ public class BingeBuddyClientController : ControllerBase
     /// <param name="overlayService">The overlay service.</param>
     /// <param name="groupMembershipService">The group membership service.</param>
     /// <param name="userProfileService">The user profile service.</param>
+    /// <param name="watchTogetherHistoryService">The watch-together history service.</param>
     /// <param name="logger">The logger.</param>
     public BingeBuddyClientController(
         IBingeBuddyOverlayService overlayService,
         IGroupMembershipService groupMembershipService,
         IUserProfileService userProfileService,
+        IWatchTogetherHistoryService watchTogetherHistoryService,
         ILogger<BingeBuddyClientController> logger)
     {
         _overlayService = overlayService;
         _groupMembershipService = groupMembershipService;
         _userProfileService = userProfileService;
+        _watchTogetherHistoryService = watchTogetherHistoryService;
         _logger = logger;
     }
 
@@ -142,6 +146,46 @@ public class BingeBuddyClientController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to build overlays for user {UserId}", userId);
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
+    /// Records watch-together progress for buddies in the active session.
+    /// </summary>
+    /// <param name="request">The progress payload.</param>
+    /// <returns>No content when saved.</returns>
+    [HttpPost("WatchTogether/Progress")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult RecordWatchTogetherProgress([FromBody] RecordWatchTogetherProgressRequest request)
+    {
+        var hostUserId = GetAuthenticatedUserId();
+        if (hostUserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        if (request is null || request.BuddyUserIds.Count == 0)
+        {
+            return BadRequest();
+        }
+
+        if (!request.MovieId.HasValue && request.Episode is null)
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            _watchTogetherHistoryService.RecordProgress(hostUserId, request);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to record watch together progress for host {HostUserId}", hostUserId);
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
