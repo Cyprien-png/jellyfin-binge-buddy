@@ -24,6 +24,7 @@ public class BingeBuddyClientController : ControllerBase
     private readonly IGroupMembershipService _groupMembershipService;
     private readonly IUserProfileService _userProfileService;
     private readonly IWatchTogetherHistoryService _watchTogetherHistoryService;
+    private readonly IWatchTogetherQueueService _watchTogetherQueueService;
     private readonly ILogger<BingeBuddyClientController> _logger;
 
     /// <summary>
@@ -33,18 +34,21 @@ public class BingeBuddyClientController : ControllerBase
     /// <param name="groupMembershipService">The group membership service.</param>
     /// <param name="userProfileService">The user profile service.</param>
     /// <param name="watchTogetherHistoryService">The watch-together history service.</param>
+    /// <param name="watchTogetherQueueService">The watch-together queue service.</param>
     /// <param name="logger">The logger.</param>
     public BingeBuddyClientController(
         IBingeBuddyOverlayService overlayService,
         IGroupMembershipService groupMembershipService,
         IUserProfileService userProfileService,
         IWatchTogetherHistoryService watchTogetherHistoryService,
+        IWatchTogetherQueueService watchTogetherQueueService,
         ILogger<BingeBuddyClientController> logger)
     {
         _overlayService = overlayService;
         _groupMembershipService = groupMembershipService;
         _userProfileService = userProfileService;
         _watchTogetherHistoryService = watchTogetherHistoryService;
+        _watchTogetherQueueService = watchTogetherQueueService;
         _logger = logger;
     }
 
@@ -146,6 +150,34 @@ public class BingeBuddyClientController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to build overlays for user {UserId}", userId);
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
+    /// Gets pending watch-together media grouped by host for the authenticated user.
+    /// </summary>
+    /// <returns>The grouped queue payload.</returns>
+    [HttpGet("WatchTogether/Queue")]
+    [Authorize]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult<WatchTogetherQueueResponse> GetWatchTogetherQueue()
+    {
+        var userId = GetAuthenticatedUserId();
+        if (userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            return Ok(_watchTogetherQueueService.GetQueueForUser(userId));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load watch together queue for user {UserId}", userId);
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
