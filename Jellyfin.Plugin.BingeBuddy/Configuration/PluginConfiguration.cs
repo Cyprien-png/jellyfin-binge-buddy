@@ -15,6 +15,7 @@ public class PluginConfiguration : BasePluginConfiguration
     public PluginConfiguration()
     {
         Groups = new List<BingeGroup>();
+        WatchTogether = new WatchTogetherConfiguration();
     }
 
     /// <summary>
@@ -23,4 +24,9 @@ public class PluginConfiguration : BasePluginConfiguration
     [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Required for plugin XML configuration serialization.")]
     [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Required for plugin XML configuration serialization.")]
     public List<BingeGroup> Groups { get; set; }
+
+    /// <summary>
+    /// Gets or sets watch-together progress tracked for group members.
+    /// </summary>
+    public WatchTogetherConfiguration WatchTogether { get; set; }
 }
