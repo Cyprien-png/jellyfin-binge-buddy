@@ -10,29 +10,21 @@
     let isStarted = false;
     let interceptorRegistered = false;
     let fallbackBound = false;
-    let gatePromise = null;
     let gateInProgress = false;
 
-    function getAssetUrl(path) {
-        if (window.BingeBuddyAssets) {
-            return BingeBuddyAssets.getUrl(path);
-        }
-
-        if (typeof ApiClient !== 'undefined' && ApiClient.getUrl) {
-            return ApiClient.getUrl('BingeBuddy/js/' + path);
-        }
-
-        return '/BingeBuddy/js/' + path;
+    function getContext() {
+        return window.BingeBuddyWatchTogetherContext;
     }
 
-    function loadScriptModule(scriptId, scriptPath, isReady) {
-        return new Promise(function (resolve, reject) {
-            if (isReady()) {
-                resolve();
-                return;
-            }
+    function ensureContextModule() {
+        if (window.BingeBuddyWatchTogetherContext) {
+            return Promise.resolve();
+        }
 
+        return new Promise(function (resolve, reject) {
+            let scriptId = 'binge-buddy-watch-together-context-script';
             let existing = document.getElementById(scriptId);
+
             if (existing) {
                 existing.addEventListener('load', function () { resolve(); }, { once: true });
                 existing.addEventListener('error', reject, { once: true });
@@ -41,52 +33,24 @@
 
             let script = document.createElement('script');
             script.id = scriptId;
-            script.src = getAssetUrl(scriptPath);
+            script.src = (window.BingeBuddyAssets
+                ? BingeBuddyAssets.getUrl('services/watchTogetherContext.js')
+                : ApiClient.getUrl('BingeBuddy/js/services/watchTogetherContext.js'));
             script.addEventListener('load', function () { resolve(); }, { once: true });
             script.addEventListener('error', reject, { once: true });
             document.head.appendChild(script);
         });
     }
 
-    function ensureWatchTogetherDialogModule() {
-        return loadScriptModule(
-            'binge-buddy-watch-together-dialog-script',
-            'components/watchTogether/watchTogetherDialog.js',
-            function () { return window.BingeBuddyWatchTogetherDialog; }
-        );
-    }
-
     function ensureDependencies() {
-        if (gatePromise) {
-            return gatePromise;
-        }
-
-        gatePromise = Promise.all([
-            ensureWatchTogetherDialogModule(),
-            loadScriptModule(
-                'binge-buddy-watch-together-session-script',
-                'services/watchTogetherSession.js',
-                function () { return window.BingeBuddyWatchTogetherSession; }
-            ),
-            loadScriptModule(
-                'binge-buddy-user-select-script',
-                'components/userSelect/userSelect.js',
-                function () { return window.BingeBuddyUserSelect; }
-            )
-        ]).then(function () {
-            BingeBuddyUserSelect.ensureStyles();
-            tryRegisterPreplayInterceptor(window.__bbPluginManager);
+        return ensureContextModule().then(function () {
+            return getContext().ensureGateModules();
         });
-
-        return gatePromise;
-    }
-
-    function isSupportedMediaType(mediaType) {
-        return mediaType === 'Video' || mediaType === 'Audio';
     }
 
     function handlePrePlayIntercept(options) {
-        if (!options || !isSupportedMediaType(options.mediaType)) {
+        let context = getContext();
+        if (!options || !context || !context.isSupportedMediaType(options.mediaType)) {
             return Promise.resolve();
         }
 
@@ -98,11 +62,9 @@
 
         return ensureDependencies()
             .then(function () {
-                return BingeBuddyUserSelect.loadBuddies();
+                return context.resolveActiveBuddyIds();
             })
-            .then(function (buddies) {
-                let activeBuddyIds = BingeBuddyWatchTogetherSession.pruneToKnownBuddies(buddies);
-
+            .then(function (activeBuddyIds) {
                 if (!activeBuddyIds.length) {
                     return Promise.resolve();
                 }
@@ -170,22 +132,21 @@
         fallbackBound = true;
 
         Events.on(playbackManager, 'playbackstart', function (event, player, state) {
-            if (interceptorRegistered || gateInProgress) {
+            let context = getContext();
+            if (interceptorRegistered || gateInProgress || !context) {
                 return;
             }
 
             let mediaType = state && state.NowPlayingItem && state.NowPlayingItem.MediaType;
-            if (!isSupportedMediaType(mediaType)) {
+            if (!context.isSupportedMediaType(mediaType)) {
                 return;
             }
 
             ensureDependencies()
                 .then(function () {
-                    return BingeBuddyUserSelect.loadBuddies();
+                    return context.resolveActiveBuddyIds();
                 })
-                .then(function (buddies) {
-                    let activeBuddyIds = BingeBuddyWatchTogetherSession.pruneToKnownBuddies(buddies);
-
+                .then(function (activeBuddyIds) {
                     if (!activeBuddyIds.length) {
                         return null;
                     }
@@ -244,6 +205,9 @@
     window.BingeBuddyPlaybackGateService = {
         start: start,
         onJellyfinInstanceDiscovered: onJellyfinInstanceDiscovered,
-        handlePrePlayIntercept: handlePrePlayIntercept
+        handlePrePlayIntercept: handlePrePlayIntercept,
+        isGateInProgress: function () {
+            return gateInProgress;
+        }
     };
 })();
