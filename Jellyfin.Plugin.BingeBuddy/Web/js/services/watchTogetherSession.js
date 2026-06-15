@@ -108,11 +108,23 @@
         });
     }
 
+    function pruneToKnownBuddies(buddies) {
+        let current = getSelectedUserIds();
+        let pruned = filterToKnownBuddies(current, buddies);
+
+        if (pruned.length !== current.length) {
+            setSelectedUserIds(pruned);
+        }
+
+        return pruned;
+    }
+
     window.BingeBuddyWatchTogetherSession = {
         storageKey: STORAGE_KEY,
         getSelectedUserIds: getSelectedUserIds,
         setSelectedUserIds: setSelectedUserIds,
         clearSelectedUserIds: clearSelectedUserIds,
-        filterToKnownBuddies: filterToKnownBuddies
+        filterToKnownBuddies: filterToKnownBuddies,
+        pruneToKnownBuddies: pruneToKnownBuddies
     };
 })();

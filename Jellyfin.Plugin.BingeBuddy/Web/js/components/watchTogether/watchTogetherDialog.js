@@ -12,11 +12,28 @@
     let DEFAULTS = {
         title: 'Binge Buddy: Watch together',
         text: 'Currently watching media with your buddies on this device ?<br> Select who is watching with you to sync their progress.',
+        stillWatchingText: 'Still watching media with your buddies on this device ?<br> Select who is watching with you to sync their progress.',
         buttons: [{ id: CONTINUE_BUTTON_ID, name: 'Continue', type: 'submit' }],
         maxWidth: DEFAULT_DIALOG_WIDTH,
         emptyBuddyTitle: 'No buddies found',
         emptyBuddyMessage: ''
     };
+
+    function resolveDescription(options) {
+        if (options.html) {
+            return { html: options.html };
+        }
+
+        if (options.stillWatching) {
+            return { text: options.stillWatchingText || DEFAULTS.stillWatchingText };
+        }
+
+        if (options.text) {
+            return { text: options.text };
+        }
+
+        return { text: DEFAULTS.text };
+    }
 
     function getAssetUrl(path) {
         if (window.BingeBuddyAssets) {
@@ -119,11 +136,12 @@
     function buildDialogOptions(buddies, merged, buddyListElementRef) {
         let storedSelection = BingeBuddyWatchTogetherSession.getSelectedUserIds();
         let initialSelection = merged.selectedUserIds || BingeBuddyWatchTogetherSession.filterToKnownBuddies(storedSelection, buddies);
+        let description = resolveDescription(merged);
 
         return {
             title: merged.title,
-            text: merged.text,
-            html: merged.html,
+            text: description.text,
+            html: description.html,
             buttons: merged.buttons,
             maxWidth: merged.maxWidth,
             size: merged.size,

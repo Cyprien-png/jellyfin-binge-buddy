@@ -1,3 +1,7 @@
+.dialogContainer {
+    z-index: 10000000 !important;
+}
+
 .bb-dialog .bb-form-dialog-content {
     width: min(100vw - 2rem, 42rem);
 }

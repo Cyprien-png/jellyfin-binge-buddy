@@ -33,6 +33,7 @@
     <EmbeddedResource Include="Configuration\configPage.html" />
     <EmbeddedResource Include="Web\js\plugin.js" />
     <EmbeddedResource Include="Web\js\utils\assetUrl.js" />
+    <EmbeddedResource Include="Web\js\utils\jellyfinHooks.js" />
     <EmbeddedResource Include="Web\js\components\navbar\navbar.js" />
     <EmbeddedResource Include="Web\js\components\navbar\navbar.css" />
     <EmbeddedResource Include="Web\js\components\dialog\dialog.js" />
@@ -44,6 +45,7 @@
     <EmbeddedResource Include="Web\js\components\overlays\overlays.js" />
     <EmbeddedResource Include="Web\js\components\overlays\overlays.css" />
     <EmbeddedResource Include="Web\js\services\watchTogetherSession.js" />
+    <EmbeddedResource Include="Web\js\services\playbackGateService.js" />
   </ItemGroup>
 
 </Project>

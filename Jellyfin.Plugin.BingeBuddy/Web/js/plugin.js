@@ -27,6 +27,45 @@
         }, 50);
     }
 
+    function loadJellyfinHooks(callback) {
+        if (window.__bbJellyfinHooksInstalled) {
+            callback();
+            return;
+        }
+
+        if (document.getElementById('binge-buddy-jellyfin-hooks-script')) {
+            document.getElementById('binge-buddy-jellyfin-hooks-script').addEventListener('load', callback, { once: true });
+            return;
+        }
+
+        let script = document.createElement('script');
+        script.id = 'binge-buddy-jellyfin-hooks-script';
+        script.src = ApiClient.getUrl('BingeBuddy/js/utils/jellyfinHooks.js');
+        script.addEventListener('load', callback, { once: true });
+        document.head.appendChild(script);
+    }
+
+    function loadPlaybackGateService() {
+        if (document.getElementById('binge-buddy-playback-gate-script')) {
+            if (window.BingeBuddyPlaybackGateService) {
+                BingeBuddyPlaybackGateService.start();
+            }
+            return;
+        }
+
+        let script = document.createElement('script');
+        script.id = 'binge-buddy-playback-gate-script';
+        script.src = (window.BingeBuddyAssets
+            ? BingeBuddyAssets.getUrl('services/playbackGateService.js')
+            : ApiClient.getUrl('BingeBuddy/js/services/playbackGateService.js'));
+        script.addEventListener('load', function () {
+            if (window.BingeBuddyPlaybackGateService) {
+                BingeBuddyPlaybackGateService.start();
+            }
+        }, { once: true });
+        document.head.appendChild(script);
+    }
+
     function loadAssetUtils(callback) {
         if (window.BingeBuddyAssets) {
             callback();
@@ -92,6 +131,7 @@
 
         window[BOOTSTRAP_FLAG] = true;
         loadOverlayModule();
+        loadPlaybackGateService();
         return true;
     }
 
@@ -112,12 +152,14 @@
     }
 
     runWhenApiClientReady(function () {
-        loadAssetUtils(function () {
-            loadNavbarModule();
+        loadJellyfinHooks(function () {
+            loadAssetUtils(function () {
+                loadNavbarModule();
 
-            if (!tryStart()) {
-                bindAuthWaiters();
-            }
+                if (!tryStart()) {
+                    bindAuthWaiters();
+                }
+            });
         });
     });
 })();
