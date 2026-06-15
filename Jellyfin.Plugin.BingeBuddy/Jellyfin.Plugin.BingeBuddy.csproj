@@ -36,6 +36,8 @@
     <EmbeddedResource Include="Web\js\overlays.css" />
     <EmbeddedResource Include="Web\js\navbar.js" />
     <EmbeddedResource Include="Web\js\navbar.css" />
+    <EmbeddedResource Include="Web\js\dialog.js" />
+    <EmbeddedResource Include="Web\js\dialog.css" />
   </ItemGroup>
 
 </Project>

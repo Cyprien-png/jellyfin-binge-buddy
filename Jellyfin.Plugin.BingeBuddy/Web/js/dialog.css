@@ -1,0 +1,77 @@
+.bb-dialog .bb-form-dialog-content {
+    width: min(100vw - 2rem, 42rem);
+}
+
+.bb-dialog .bb-dialog-custom,
+.bb-dialog-fallback .bb-dialog-custom {
+    margin-top: 0.75rem;
+}
+
+.bb-dialog-fallback-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.62);
+}
+
+.bb-dialog-fallback {
+    width: min(100%, 42rem);
+    max-height: min(85vh, 40rem);
+    display: flex;
+    flex-direction: column;
+    border-radius: 0.35rem;
+    overflow: hidden;
+    background: var(--card-background, #1f1f1f);
+    color: var(--primary-text-color, #fff);
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+}
+
+.bb-dialog-fallback-header {
+    padding: 1rem 1.25rem 0.5rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.bb-dialog-fallback-body {
+    padding: 0 1.25rem 1rem;
+    overflow: auto;
+}
+
+.bb-dialog-fallback-text {
+    margin: 0;
+    line-height: 1.5;
+    opacity: 0.92;
+}
+
+.bb-dialog-fallback-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bb-dialog-fallback-button {
+    border: 0;
+    border-radius: 0.25rem;
+    padding: 0.55rem 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+    cursor: pointer;
+}
+
+.bb-dialog-fallback-button-primary {
+    background: var(--accent, #00a4dc);
+    color: #fff;
+}
+
+.bb-dialog-fallback-button:hover,
+.bb-dialog-fallback-button:focus-visible {
+    filter: brightness(1.08);
+}
