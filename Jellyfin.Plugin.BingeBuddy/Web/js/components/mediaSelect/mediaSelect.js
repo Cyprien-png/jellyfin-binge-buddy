@@ -186,6 +186,9 @@
         let copy = document.createElement('span');
         copy.className = 'bb-media-copy';
 
+        let topCopy = document.createElement('span');
+        topCopy.className = 'bb-media-top-copy';
+
         let name = document.createElement('span');
         name.className = 'bb-media-name';
         name.textContent = media.Name;
@@ -194,8 +197,10 @@
         secondary.className = 'bb-media-secondary';
         secondary.textContent = media.SecondaryText || '';
 
-        copy.appendChild(name);
-        copy.appendChild(secondary);
+        topCopy.appendChild(name);
+        topCopy.appendChild(secondary);
+
+        copy.appendChild(topCopy);
 
         if (window.BingeBuddyWatchProgress) {
             BingeBuddyWatchProgress.ensureStyles();

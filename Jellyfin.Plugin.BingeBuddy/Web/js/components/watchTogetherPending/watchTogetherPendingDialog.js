@@ -12,6 +12,7 @@
     let DEFAULTS = {
         buttons: [{ id: CONTINUE_BUTTON_ID, name: 'Continue', type: 'submit' }],
         maxWidth: DEFAULT_DIALOG_WIDTH,
+        requireContinue: true,
         emptyMediaTitle: 'No media found',
         emptyMediaMessage: ''
     };
@@ -152,6 +153,7 @@
                 buttons: merged.buttons,
                 maxWidth: merged.maxWidth,
                 size: merged.size,
+                requireContinue: merged.requireContinue !== false,
                 renderContent: function (container) {
                     mediaListElementRef.current = renderMediaList(container, mediaItems, {
                         selectedMediaIds: merged.selectedMediaIds || getDefaultSelectedMediaIds(mediaItems),

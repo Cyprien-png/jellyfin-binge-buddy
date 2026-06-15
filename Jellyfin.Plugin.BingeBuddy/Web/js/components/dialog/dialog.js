@@ -184,8 +184,12 @@
         dlg.classList.add('dialog-fullscreen-lowres');
         dlg.classList.add('bb-dialog');
 
+        if (hasCustomContent) {
+            dlg.classList.add('bb-dialog-has-custom');
+        }
+
         dlg.innerHTML =
-            '<div class="formDialogContent no-grow bb-form-dialog-content">' +
+            '<div class="formDialogContent bb-form-dialog-content' + (hasCustomContent ? '' : ' no-grow') + '">' +
                 '<div class="formDialogHeader">' +
                     (title ? '<h3 class="formDialogHeaderTitle">' + escapeHtml(title) + '</h3>' : '<h3 class="formDialogHeaderTitle hide"></h3>') +
                 '</div>' +
@@ -193,7 +197,7 @@
                     '<div class="text' + (bodyHtml ? '' : ' hide') + '">' + bodyHtml + '</div>' +
                     (hasCustomContent ? '<div class="bb-dialog-custom"></div>' : '') +
                 '</div>' +
-                (buttons.length ? '<div class="formDialogFooter">' + buildButtonsHtml(buttons) + '</div>' : '') +
+                (buttons.length ? '<div class="formDialogFooter' + (hasCustomContent ? ' formDialogFooter-flex' : '') + '">' + buildButtonsHtml(buttons) + '</div>' : '') +
             '</div>';
 
         let formDialogContent = dlg.querySelector('.formDialogContent');
@@ -239,7 +243,7 @@
             let requireContinue = isRequireContinue(options);
 
             let panel = document.createElement('div');
-            panel.className = 'bb-dialog-fallback';
+            panel.className = 'bb-dialog-fallback' + (hasCustomContent ? ' bb-dialog-has-custom' : '');
             panel.setAttribute('role', 'dialog');
             panel.setAttribute('aria-modal', 'true');
             if (title) {

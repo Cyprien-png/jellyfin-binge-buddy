@@ -1,5 +1,7 @@
 .bb-watch-together-user-scroll {
-    max-height: min(42vh, 22rem);
+    flex: 1 1 0;
+    min-height: 0;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     margin-top: 0.25rem;
