@@ -40,6 +40,7 @@
     <EmbeddedResource Include="Web\js\dialog.css" />
     <EmbeddedResource Include="Web\js\userSelect.js" />
     <EmbeddedResource Include="Web\js\userSelect.css" />
+    <EmbeddedResource Include="Web\js\watchTogetherSession.js" />
   </ItemGroup>
 
 </Project>

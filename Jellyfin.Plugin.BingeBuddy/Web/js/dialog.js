@@ -48,7 +48,7 @@
 
     function normalizeButtons(buttons) {
         if (!buttons || !buttons.length) {
-            return [{ id: 'close', name: 'Continue', type: 'submit' }];
+            return [{ id: 'continue', name: 'Continue', type: 'submit' }];
         }
 
         return buttons;
@@ -267,34 +267,41 @@
         return showFallbackDialog(options);
     }
 
-    function ensureUserSelectModule() {
+    function loadScriptModule(scriptId, scriptPath) {
         return new Promise(function (resolve, reject) {
-            if (window.BingeBuddyUserSelect) {
-                BingeBuddyUserSelect.ensureStyles();
+            let globalReady = scriptId === 'binge-buddy-user-select-script'
+                ? function () { return window.BingeBuddyUserSelect; }
+                : function () { return window.BingeBuddyWatchTogetherSession; };
+
+            if (globalReady()) {
                 resolve();
                 return;
             }
 
-            let existing = document.getElementById('binge-buddy-user-select-script');
+            let existing = document.getElementById(scriptId);
             if (existing) {
-                existing.addEventListener('load', function () {
-                    BingeBuddyUserSelect.ensureStyles();
-                    resolve();
-                }, { once: true });
+                existing.addEventListener('load', function () { resolve(); }, { once: true });
                 existing.addEventListener('error', reject, { once: true });
                 return;
             }
 
             let script = document.createElement('script');
-            script.id = 'binge-buddy-user-select-script';
-            script.src = getAssetUrl('userSelect.js');
-            script.addEventListener('load', function () {
-                BingeBuddyUserSelect.ensureStyles();
-                resolve();
-            }, { once: true });
+            script.id = scriptId;
+            script.src = getAssetUrl(scriptPath);
+            script.addEventListener('load', function () { resolve(); }, { once: true });
             script.addEventListener('error', reject, { once: true });
             document.head.appendChild(script);
         });
+    }
+
+    function ensureUserSelectModule() {
+        return loadScriptModule('binge-buddy-user-select-script', 'userSelect.js').then(function () {
+            BingeBuddyUserSelect.ensureStyles();
+        });
+    }
+
+    function ensureWatchTogetherSessionModule() {
+        return loadScriptModule('binge-buddy-watch-together-session-script', 'watchTogetherSession.js');
     }
 
     function renderWatchTogetherBuddies(container, buddies, options) {
@@ -322,28 +329,43 @@
         let defaults = {
             title: 'Binge Buddy: Watch together',
             text: 'Currently watching media with your buddies on this device ?<br> Select who is watching with you to sync their progress.',
-            buttons: [{ id: 'close', name: 'Continue', type: 'submit' }],
+            buttons: [{ id: 'continue', name: 'Continue', type: 'submit' }],
             maxWidth: DEFAULT_DIALOG_WIDTH
         };
 
         let merged = Object.assign({}, defaults, options || {});
+        let buddyListElement = null;
 
-        return ensureUserSelectModule()
+        return Promise.all([
+            ensureUserSelectModule(),
+            ensureWatchTogetherSessionModule()
+        ])
             .then(function () {
                 return BingeBuddyUserSelect.loadBuddies();
             })
             .then(function (buddies) {
-                let buddyOptions = {
-                    selectedUserIds: merged.selectedUserIds,
-                    isSelected: merged.isSelected,
-                    onChange: merged.onBuddyChange || merged.onChange
-                };
+                let storedSelection = BingeBuddyWatchTogetherSession.getSelectedUserIds();
+                let initialSelection = merged.selectedUserIds || BingeBuddyWatchTogetherSession.filterToKnownBuddies(storedSelection, buddies);
 
                 merged.renderContent = function (container) {
-                    renderWatchTogetherBuddies(container, buddies, buddyOptions);
+                    buddyListElement = renderWatchTogetherBuddies(container, buddies, {
+                        selectedUserIds: initialSelection
+                    });
                 };
 
-                return show(merged);
+                return show(merged).then(function (result) {
+                    if (result === 'continue' && buddyListElement) {
+                        let selectedUserIds = BingeBuddyUserSelect.getSelectedUserIds(buddyListElement);
+                        BingeBuddyWatchTogetherSession.setSelectedUserIds(selectedUserIds);
+                    }
+
+                    return {
+                        action: result,
+                        selectedUserIds: result === 'continue' && buddyListElement
+                            ? BingeBuddyUserSelect.getSelectedUserIds(buddyListElement)
+                            : BingeBuddyWatchTogetherSession.getSelectedUserIds()
+                    };
+                });
             });
     }
 
