@@ -154,26 +154,30 @@ public class WatchTogetherHistoryService : IWatchTogetherHistoryService
         {
             userProgress = new UserWatchProgress
             {
-                UserId = buddyUserId,
-                Host = new WatchTogetherHost
-                {
-                    HostId = hostUserId
-                }
+                UserId = buddyUserId
             };
             watchTogether.Users.Add(userProgress);
         }
 
-        userProgress.Host ??= new WatchTogetherHost();
-        userProgress.Host.HostId = hostUserId;
+        userProgress.Hosts ??= new List<WatchTogetherHost>();
+        var hostEntry = userProgress.Hosts.FirstOrDefault(entry => entry.HostId == hostUserId);
+        if (hostEntry is null)
+        {
+            hostEntry = new WatchTogetherHost
+            {
+                HostId = hostUserId
+            };
+            userProgress.Hosts.Add(hostEntry);
+        }
 
         if (mediaContext.IsMovie)
         {
-            UpsertMovie(userProgress.Host, mediaContext.MovieId!.Value, snapshot);
+            UpsertMovie(hostEntry, mediaContext.MovieId!.Value, snapshot);
             return;
         }
 
         UpsertEpisode(
-            userProgress.Host,
+            hostEntry,
             mediaContext.SeriesId!.Value,
             mediaContext.SeasonId!.Value,
             mediaContext.EpisodeId!.Value,

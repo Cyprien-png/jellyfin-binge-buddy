@@ -42,11 +42,18 @@
     <EmbeddedResource Include="Web\js\components\watchTogether\watchTogetherDialog.css" />
     <EmbeddedResource Include="Web\js\components\userSelect\userSelect.js" />
     <EmbeddedResource Include="Web\js\components\userSelect\userSelect.css" />
+    <EmbeddedResource Include="Web\js\components\mediaSelect\mediaSelect.js" />
+    <EmbeddedResource Include="Web\js\components\mediaSelect\mediaSelect.css" />
+    <EmbeddedResource Include="Web\js\components\watchProgress\watchProgress.js" />
+    <EmbeddedResource Include="Web\js\components\watchProgress\watchProgress.css" />
+    <EmbeddedResource Include="Web\js\components\watchTogetherPending\watchTogetherPendingDialog.js" />
+    <EmbeddedResource Include="Web\js\components\watchTogetherPending\watchTogetherPendingDialog.css" />
     <EmbeddedResource Include="Web\js\components\overlays\overlays.js" />
     <EmbeddedResource Include="Web\js\components\overlays\overlays.css" />
     <EmbeddedResource Include="Web\js\services\watchTogetherSession.js" />
     <EmbeddedResource Include="Web\js\services\watchTogetherContext.js" />
     <EmbeddedResource Include="Web\js\services\watchTogetherHistoryService.js" />
+    <EmbeddedResource Include="Web\js\services\watchTogetherQueueService.js" />
     <EmbeddedResource Include="Web\js\services\playbackGateService.js" />
     <EmbeddedResource Include="Web\js\services\playbackStopService.js" />
   </ItemGroup>

@@ -1,0 +1,12 @@
+.bb-watch-together-pending-scroll {
+    max-height: min(48vh, 26rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-top: 0.25rem;
+    padding-right: 0.2rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.bb-watch-together-pending-scroll .bb-media-select {
+    margin-bottom: 0;
+}
