@@ -100,6 +100,50 @@
         return Math.max(calculated, 320);
     }
 
+    function isRequireContinue(options) {
+        return !!(options && options.requireContinue);
+    }
+
+    function applyRequireContinueGuards(dlg, options) {
+        if (!isRequireContinue(options)) {
+            return;
+        }
+
+        dlg.setAttribute('data-bb-require-continue', 'true');
+
+        function blockDismissEvent(event) {
+            if (!dlg.__bbAllowClose) {
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+                event.preventDefault();
+            }
+        }
+
+        dlg.addEventListener('open', function () {
+            if (dlg.backdrop) {
+                dlg.backdrop.addEventListener('click', blockDismissEvent, true);
+                dlg.backdrop.addEventListener('mousedown', blockDismissEvent, true);
+                dlg.backdrop.addEventListener('contextmenu', blockDismissEvent, true);
+            }
+
+            if (dlg.dialogContainer) {
+                dlg.dialogContainer.addEventListener('click', function (event) {
+                    if (event.target === dlg.dialogContainer) {
+                        blockDismissEvent(event);
+                    }
+                }, true);
+            }
+        }, { once: true });
+
+        dlg.addEventListener('keydown', function (event) {
+            if (!dlg.__bbAllowClose && event.key === 'Escape') {
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+                event.preventDefault();
+            }
+        }, true);
+    }
+
     function showJellyfinDialog(options) {
         ensureStyles();
 
@@ -109,6 +153,10 @@
             removeOnClose: true,
             scrollY: false
         };
+
+        if (isRequireContinue(options)) {
+            dialogOptions.enableHistory = false;
+        }
 
         if (options.size) {
             dialogOptions.size = options.size;
@@ -146,9 +194,12 @@
 
         appendCustomContent(dlg.querySelector('.bb-dialog-custom'), options);
 
+        applyRequireContinueGuards(dlg, options);
+
         let dialogResult;
 
         function onButtonClick() {
+            dlg.__bbAllowClose = true;
             dialogResult = this.getAttribute('data-id');
             helper.close(dlg);
         }
@@ -174,6 +225,7 @@
         return new Promise(function (resolve) {
             let backdrop = document.createElement('div');
             backdrop.className = 'bb-dialog-fallback-backdrop';
+            let requireContinue = isRequireContinue(options);
 
             let panel = document.createElement('div');
             panel.className = 'bb-dialog-fallback';
@@ -214,6 +266,10 @@
             }
 
             function onKeyDown(event) {
+                if (requireContinue) {
+                    return;
+                }
+
                 if (event.key === 'Escape') {
                     event.preventDefault();
                     closeDialog();
@@ -236,6 +292,10 @@
             }
 
             backdrop.addEventListener('click', function (event) {
+                if (requireContinue) {
+                    return;
+                }
+
                 if (event.target === backdrop) {
                     closeDialog();
                 }

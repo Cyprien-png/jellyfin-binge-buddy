@@ -108,7 +108,8 @@
                 }
 
                 return BingeBuddyWatchTogetherDialog.show({
-                    stillWatching: true
+                    stillWatching: true,
+                    requireContinue: true
                 }).then(function (result) {
                     if (result && result.action === 'continue') {
                         return Promise.resolve();
@@ -192,7 +193,8 @@
                     playbackManager.pause(player);
 
                     return BingeBuddyWatchTogetherDialog.show({
-                        stillWatching: true
+                        stillWatching: true,
+                        requireContinue: true
                     }).then(function (result) {
                         if (result && result.action === 'continue') {
                             playbackManager.unpause(player);

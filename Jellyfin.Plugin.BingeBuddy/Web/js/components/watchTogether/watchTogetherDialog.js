@@ -145,6 +145,7 @@
             buttons: merged.buttons,
             maxWidth: merged.maxWidth,
             size: merged.size,
+            requireContinue: !!merged.requireContinue,
             renderContent: function (container) {
                 buddyListElementRef.current = renderBuddyList(container, buddies, {
                     selectedUserIds: initialSelection,
