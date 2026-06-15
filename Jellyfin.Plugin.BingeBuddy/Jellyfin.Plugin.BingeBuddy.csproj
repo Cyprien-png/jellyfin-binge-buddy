@@ -38,6 +38,8 @@
     <EmbeddedResource Include="Web\js\navbar.css" />
     <EmbeddedResource Include="Web\js\dialog.js" />
     <EmbeddedResource Include="Web\js\dialog.css" />
+    <EmbeddedResource Include="Web\js\userSelect.js" />
+    <EmbeddedResource Include="Web\js\userSelect.css" />
   </ItemGroup>
 
 </Project>
