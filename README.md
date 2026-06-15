@@ -58,6 +58,7 @@ When you browse in the **Jellyfin web client**, Binge Buddy adds a small stack o
 | **Movies** | Buddies who started that movie |
 | **Episodes** | Buddies who started that episode |
 | **Seasons** | Buddies who started **any episode** in that season |
+| **Shows (series)** | Buddies who started **any episode** in that show |
 
 Display rules:
 
@@ -94,7 +95,7 @@ Cards appear at the **top** of the season view (above the episode list). Progres
 
 - Create and manage binge-watching groups from the plugin settings page
 - Pick members with checkboxes and profile avatars
-- Avatar stacks on **movie**, **episode**, and **season** posters in the web client
+- Avatar stacks on **movie**, **episode**, **season**, and **show** posters in the web client
 - **Binge buddies** detail cards on **movie** and **season** pages
 - Side-by-side **You / Them** progress with time watched, percentage, and Jellyfin **Finished** state
 - Season cards show the **highest started episode** and that episode’s progress
@@ -122,7 +123,7 @@ To remove a group, open it and use **Delete group** (with confirmation).
 After groups are configured:
 
 1. Sign in to Jellyfin in a **browser**.
-2. **Library browsing** — look at poster thumbnails for stacked buddy avatars (movies, episodes, seasons).
+2. **Library browsing** — look at poster thumbnails for stacked buddy avatars (movies, episodes, seasons, shows).
 3. **Movie details** — scroll to **Binge buddies** for You vs Them progress on that film.
 4. **Season details** — **Binge buddies** appears at the top; each card shows the buddy’s furthest episode and progress.
 
