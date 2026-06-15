@@ -133,6 +133,10 @@
         return list;
     }
 
+    function resolveRequireContinue(options) {
+        return !!(options.requireContinue || options.stillWatching);
+    }
+
     function buildDialogOptions(buddies, merged, buddyListElementRef) {
         let storedSelection = BingeBuddyWatchTogetherSession.getSelectedUserIds();
         let initialSelection = merged.selectedUserIds || BingeBuddyWatchTogetherSession.filterToKnownBuddies(storedSelection, buddies);
@@ -145,7 +149,7 @@
             buttons: merged.buttons,
             maxWidth: merged.maxWidth,
             size: merged.size,
-            requireContinue: !!merged.requireContinue,
+            requireContinue: resolveRequireContinue(merged),
             renderContent: function (container) {
                 buddyListElementRef.current = renderBuddyList(container, buddies, {
                     selectedUserIds: initialSelection,

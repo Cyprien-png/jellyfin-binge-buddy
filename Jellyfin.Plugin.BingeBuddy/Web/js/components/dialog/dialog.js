@@ -104,32 +104,43 @@
         return !!(options && options.requireContinue);
     }
 
-    function applyRequireContinueGuards(dlg, options) {
+    function applyRequireContinueGuards(dlg, helper, options) {
         if (!isRequireContinue(options)) {
             return;
         }
 
+        dlg.__bbAllowClose = false;
         dlg.setAttribute('data-bb-require-continue', 'true');
 
-        function blockDismissEvent(event) {
-            if (!dlg.__bbAllowClose) {
-                event.stopPropagation();
-                event.stopImmediatePropagation();
-                event.preventDefault();
+        let originalClose = helper.close.bind(helper);
+        helper.close = function (targetDlg) {
+            if (targetDlg === dlg && !dlg.__bbAllowClose) {
+                return Promise.resolve();
             }
-        }
+
+            if (targetDlg === dlg) {
+                helper.close = originalClose;
+            }
+
+            return originalClose(targetDlg);
+        };
 
         dlg.addEventListener('open', function () {
-            if (dlg.backdrop) {
-                dlg.backdrop.addEventListener('click', blockDismissEvent, true);
-                dlg.backdrop.addEventListener('mousedown', blockDismissEvent, true);
-                dlg.backdrop.addEventListener('contextmenu', blockDismissEvent, true);
+            if (dlg.backdrop && dlg.backdrop.parentNode) {
+                let cleanBackdrop = dlg.backdrop.cloneNode(false);
+                cleanBackdrop.className = dlg.backdrop.className;
+                void cleanBackdrop.offsetWidth;
+                cleanBackdrop.classList.add('dialogBackdropOpened');
+                dlg.backdrop.parentNode.replaceChild(cleanBackdrop, dlg.backdrop);
+                dlg.backdrop = cleanBackdrop;
             }
 
             if (dlg.dialogContainer) {
                 dlg.dialogContainer.addEventListener('click', function (event) {
-                    if (event.target === dlg.dialogContainer) {
-                        blockDismissEvent(event);
+                    if (!dlg.__bbAllowClose && event.target === dlg.dialogContainer) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.stopImmediatePropagation();
                     }
                 }, true);
             }
@@ -194,7 +205,7 @@
 
         appendCustomContent(dlg.querySelector('.bb-dialog-custom'), options);
 
-        applyRequireContinueGuards(dlg, options);
+        applyRequireContinueGuards(dlg, helper, options);
 
         let dialogResult;
 
