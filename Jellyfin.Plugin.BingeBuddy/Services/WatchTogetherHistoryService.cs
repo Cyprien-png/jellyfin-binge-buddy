@@ -14,8 +14,6 @@ namespace Jellyfin.Plugin.BingeBuddy.Services;
 /// </summary>
 public class WatchTogetherHistoryService : IWatchTogetherHistoryService
 {
-    private static readonly object ConfigurationLock = new();
-
     private readonly IGroupMembershipService _groupMembershipService;
     private readonly IDbContextFactory<JellyfinDbContext> _dbContextFactory;
 
@@ -54,8 +52,12 @@ public class WatchTogetherHistoryService : IWatchTogetherHistoryService
         }
 
         var snapshot = BuildSnapshot(hostUserId, mediaContext.ItemId, request.UserData);
+        if (!WatchTogetherProgressRules.QualifiesForApproval(snapshot))
+        {
+            return;
+        }
 
-        lock (ConfigurationLock)
+        WatchTogetherProgressRules.RunLocked(() =>
         {
             var plugin = Plugin.Instance;
             if (plugin is null)
@@ -72,7 +74,7 @@ public class WatchTogetherHistoryService : IWatchTogetherHistoryService
             }
 
             plugin.SaveConfiguration();
-        }
+        });
     }
 
     private List<Guid> FilterAllowedBuddyIds(Guid hostUserId, IEnumerable<Guid> buddyUserIds)

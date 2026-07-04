@@ -40,39 +40,47 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
     /// <inheritdoc />
     public WatchTogetherQueueResponse GetQueueForUser(Guid userId)
     {
-        var response = new WatchTogetherQueueResponse();
-        var configuration = Plugin.Instance?.Configuration;
-        var userProgress = configuration?.WatchTogether?.Users
-            .FirstOrDefault(entry => entry.UserId == userId);
-
-        if (userProgress is null)
+        return WatchTogetherProgressRules.RunLocked(() =>
         {
+            var response = new WatchTogetherQueueResponse();
+            var plugin = Plugin.Instance;
+            var userProgress = plugin?.Configuration.WatchTogether?.Users
+                .FirstOrDefault(entry => entry.UserId == userId);
+
+            if (userProgress is null)
+            {
+                return response;
+            }
+
+            if (WatchTogetherProgressRules.PruneUserProgress(userProgress, userId, _libraryManager))
+            {
+                plugin!.SaveConfiguration();
+            }
+
+            foreach (var host in userProgress.GetAllHosts())
+            {
+                if (host.HostId == Guid.Empty)
+                {
+                    continue;
+                }
+
+                var mediaItems = BuildMediaItems(host, userId);
+                if (mediaItems.Count == 0)
+                {
+                    continue;
+                }
+
+                var hostProfile = _userProfileService.MapUser(host.HostId);
+                response.Hosts.Add(new WatchTogetherHostQueueDto
+                {
+                    HostId = host.HostId,
+                    HostName = hostProfile?.Name ?? "Unknown user",
+                    Media = mediaItems
+                });
+            }
+
             return response;
-        }
-
-        foreach (var host in userProgress.GetAllHosts())
-        {
-            if (host.HostId == Guid.Empty)
-            {
-                continue;
-            }
-
-            var mediaItems = BuildMediaItems(host, userId);
-            if (mediaItems.Count == 0)
-            {
-                continue;
-            }
-
-            var hostProfile = _userProfileService.MapUser(host.HostId);
-            response.Hosts.Add(new WatchTogetherHostQueueDto
-            {
-                HostId = host.HostId,
-                HostName = hostProfile?.Name ?? "Unknown user",
-                Media = mediaItems
-            });
-        }
-
-        return response;
+        });
     }
 
     private List<WatchTogetherMediaQueueItemDto> BuildMediaItems(WatchTogetherHost host, Guid userId)
@@ -82,6 +90,11 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
         foreach (var movie in host.Movies)
         {
             if (movie.Id == Guid.Empty)
+            {
+                continue;
+            }
+
+            if (!WatchTogetherProgressRules.QualifiesForApproval(movie.UserData))
             {
                 continue;
             }
@@ -100,6 +113,11 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
                 foreach (var episode in season.Episodes)
                 {
                     if (episode.Id == Guid.Empty)
+                    {
+                        continue;
+                    }
+
+                    if (!WatchTogetherProgressRules.QualifiesForApproval(episode.UserData))
                     {
                         continue;
                     }
@@ -129,17 +147,7 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
         var played = userData?.Played ?? false;
         var playbackPositionTicks = userData?.PlaybackPositionTicks ?? 0;
 
-        BaseItem? item;
-        try
-        {
-            item = _libraryManager.GetItemById<BaseItem>(itemId, userId);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-
-        if (item is not Movie and not Episode)
+        if (!WatchTogetherProgressRules.TryGetAccessibleMedia(itemId, userId, _libraryManager, out var item))
         {
             return null;
         }
