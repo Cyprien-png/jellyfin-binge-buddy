@@ -222,6 +222,41 @@ public class BingeBuddyClientController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Acknowledges pending watch-together media from a host for the authenticated user.
+    /// </summary>
+    /// <param name="request">The host and selected media identifiers.</param>
+    /// <returns>No content when processed.</returns>
+    [HttpPost("WatchTogether/Queue/Acknowledge")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult AcknowledgeWatchTogetherQueue([FromBody] AcknowledgeWatchTogetherQueueRequest request)
+    {
+        var buddyUserId = GetAuthenticatedUserId();
+        if (buddyUserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        if (request is null || request.HostId == Guid.Empty)
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            _watchTogetherHistoryService.AcknowledgeHostQueue(buddyUserId, request);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to acknowledge watch together queue for user {UserId}", buddyUserId);
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
     private Guid GetAuthenticatedUserId()
     {
         var userIdClaim = User.Claims

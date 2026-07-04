@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Jellyfin.Database.Implementations;
 using Jellyfin.Plugin.BingeBuddy.Abstractions;
 using Jellyfin.Plugin.BingeBuddy.Api;
 using Jellyfin.Plugin.BingeBuddy.Configuration;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jellyfin.Plugin.BingeBuddy.Services;
@@ -16,18 +20,30 @@ public class WatchTogetherHistoryService : IWatchTogetherHistoryService
 {
     private readonly IGroupMembershipService _groupMembershipService;
     private readonly IDbContextFactory<JellyfinDbContext> _dbContextFactory;
+    private readonly IUserManager _userManager;
+    private readonly ILibraryManager _libraryManager;
+    private readonly IUserDataManager _userDataManager;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WatchTogetherHistoryService"/> class.
     /// </summary>
     /// <param name="groupMembershipService">The group membership service.</param>
     /// <param name="dbContextFactory">The Jellyfin database context factory.</param>
+    /// <param name="userManager">The Jellyfin user manager.</param>
+    /// <param name="libraryManager">The Jellyfin library manager.</param>
+    /// <param name="userDataManager">The Jellyfin user data manager.</param>
     public WatchTogetherHistoryService(
         IGroupMembershipService groupMembershipService,
-        IDbContextFactory<JellyfinDbContext> dbContextFactory)
+        IDbContextFactory<JellyfinDbContext> dbContextFactory,
+        IUserManager userManager,
+        ILibraryManager libraryManager,
+        IUserDataManager userDataManager)
     {
         _groupMembershipService = groupMembershipService;
         _dbContextFactory = dbContextFactory;
+        _userManager = userManager;
+        _libraryManager = libraryManager;
+        _userDataManager = userDataManager;
     }
 
     /// <inheritdoc />
@@ -75,6 +91,190 @@ public class WatchTogetherHistoryService : IWatchTogetherHistoryService
 
             plugin.SaveConfiguration();
         });
+    }
+
+    /// <inheritdoc />
+    public void AcknowledgeHostQueue(Guid buddyUserId, AcknowledgeWatchTogetherQueueRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.HostId == Guid.Empty)
+        {
+            return;
+        }
+
+        var visibleMemberIds = _groupMembershipService.GetVisibleMemberIds(buddyUserId).ToHashSet();
+        if (!visibleMemberIds.Contains(request.HostId))
+        {
+            return;
+        }
+
+        var user = _userManager.GetUserById(buddyUserId);
+        if (user is null)
+        {
+            return;
+        }
+
+        var selectedMediaIds = (request.SelectedMediaIds ?? new List<Guid>())
+            .Where(id => id != Guid.Empty)
+            .ToHashSet();
+
+        WatchTogetherProgressRules.RunLocked(() =>
+        {
+            var plugin = Plugin.Instance;
+            if (plugin is null)
+            {
+                return;
+            }
+
+            var configuration = plugin.Configuration;
+            configuration.WatchTogether ??= new WatchTogetherConfiguration();
+
+            var userProgress = configuration.WatchTogether.Users
+                .FirstOrDefault(entry => entry.UserId == buddyUserId);
+            if (userProgress is null)
+            {
+                return;
+            }
+
+            var hostEntry = FindMutableHostEntry(userProgress, request.HostId);
+            if (hostEntry is null)
+            {
+                return;
+            }
+
+            ApplySelectedSnapshots(user, buddyUserId, hostEntry, selectedMediaIds);
+            RemoveHostEntry(userProgress, request.HostId);
+            plugin.SaveConfiguration();
+        });
+    }
+
+    private void ApplySelectedSnapshots(
+        Jellyfin.Database.Implementations.Entities.User user,
+        Guid buddyUserId,
+        WatchTogetherHost hostEntry,
+        HashSet<Guid> selectedMediaIds)
+    {
+        foreach (var movie in hostEntry.Movies)
+        {
+            if (!selectedMediaIds.Contains(movie.Id))
+            {
+                continue;
+            }
+
+            TryApplySnapshot(user, buddyUserId, movie.Id, movie.UserData);
+        }
+
+        foreach (var show in hostEntry.Shows)
+        {
+            foreach (var season in show.Seasons)
+            {
+                foreach (var episode in season.Episodes)
+                {
+                    if (!selectedMediaIds.Contains(episode.Id))
+                    {
+                        continue;
+                    }
+
+                    TryApplySnapshot(user, buddyUserId, episode.Id, episode.UserData);
+                }
+            }
+        }
+    }
+
+    private void TryApplySnapshot(
+        Jellyfin.Database.Implementations.Entities.User user,
+        Guid buddyUserId,
+        Guid itemId,
+        UserItemDataSnapshot snapshot)
+    {
+        if (!WatchTogetherProgressRules.TryGetAccessibleMedia(itemId, buddyUserId, _libraryManager, out var item))
+        {
+            return;
+        }
+
+        var userData = _userDataManager.GetUserData(user, item);
+        if (userData is null)
+        {
+            return;
+        }
+
+        if (!ShouldApplySnapshot(userData, snapshot))
+        {
+            return;
+        }
+
+        MergeSnapshotIntoUserItemData(userData, snapshot);
+
+        var saveReason = snapshot.Played
+            ? UserDataSaveReason.PlaybackFinished
+            : UserDataSaveReason.PlaybackProgress;
+
+        _userDataManager.SaveUserData(user, item, userData, saveReason, CancellationToken.None);
+    }
+
+    private static bool ShouldApplySnapshot(
+        MediaBrowser.Controller.Entities.UserItemData userData,
+        UserItemDataSnapshot snapshot)
+    {
+        if (snapshot.Played && !userData.Played)
+        {
+            return true;
+        }
+
+        return snapshot.PlaybackPositionTicks > userData.PlaybackPositionTicks;
+    }
+
+    private static void MergeSnapshotIntoUserItemData(
+        MediaBrowser.Controller.Entities.UserItemData userData,
+        UserItemDataSnapshot snapshot)
+    {
+        userData.PlaybackPositionTicks = Math.Max(userData.PlaybackPositionTicks, snapshot.PlaybackPositionTicks);
+        userData.PlayCount = Math.Max(userData.PlayCount, Math.Max(snapshot.PlayCount, 1));
+        userData.Played = userData.Played || snapshot.Played;
+        userData.LastPlayedDate = snapshot.LastPlayedDate
+            ?? snapshot.WatchedAt
+            ?? userData.LastPlayedDate
+            ?? DateTime.UtcNow;
+
+        if (snapshot.AudioStreamIndex.HasValue)
+        {
+            userData.AudioStreamIndex = snapshot.AudioStreamIndex;
+        }
+
+        if (snapshot.SubtitleStreamIndex.HasValue)
+        {
+            userData.SubtitleStreamIndex = snapshot.SubtitleStreamIndex;
+        }
+    }
+
+    private static WatchTogetherHost? FindMutableHostEntry(UserWatchProgress userProgress, Guid hostId)
+    {
+        userProgress.Hosts ??= new List<WatchTogetherHost>();
+
+        var host = userProgress.Hosts.FirstOrDefault(entry => entry.HostId == hostId);
+        if (host is not null)
+        {
+            return host;
+        }
+
+        if (userProgress.Host?.HostId == hostId)
+        {
+            return userProgress.Host;
+        }
+
+        return null;
+    }
+
+    private static void RemoveHostEntry(UserWatchProgress userProgress, Guid hostId)
+    {
+        userProgress.Hosts ??= new List<WatchTogetherHost>();
+        userProgress.Hosts.RemoveAll(entry => entry.HostId == hostId);
+
+        if (userProgress.Host?.HostId == hostId)
+        {
+            userProgress.Host = null;
+        }
     }
 
     private List<Guid> FilterAllowedBuddyIds(Guid hostUserId, IEnumerable<Guid> buddyUserIds)

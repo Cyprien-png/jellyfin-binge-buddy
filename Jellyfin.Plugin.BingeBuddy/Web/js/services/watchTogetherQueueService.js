@@ -88,6 +88,24 @@
         });
     }
 
+    function acknowledgeHostQueue(hostQueue, dialogResult) {
+        if (!dialogResult || dialogResult.action !== 'continue') {
+            return Promise.resolve();
+        }
+
+        return ApiClient.ajax({
+            type: 'POST',
+            url: ApiClient.getUrl('BingeBuddy/WatchTogether/Queue/Acknowledge'),
+            data: JSON.stringify({
+                hostId: hostQueue.hostId,
+                selectedMediaIds: dialogResult.selectedMediaIds || []
+            }),
+            contentType: 'application/json'
+        }).catch(function (error) {
+            console.warn('[BingeBuddy] Failed to acknowledge watch together queue.', error);
+        });
+    }
+
     function showHostDialogs(hostQueues) {
         let chain = Promise.resolve();
 
@@ -101,6 +119,8 @@
                     hostId: hostQueue.hostId,
                     hostName: hostQueue.hostName,
                     media: hostQueue.media
+                }).then(function (dialogResult) {
+                    return acknowledgeHostQueue(hostQueue, dialogResult);
                 });
             });
         });

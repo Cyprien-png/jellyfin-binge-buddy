@@ -15,4 +15,11 @@ public interface IWatchTogetherHistoryService
     /// <param name="hostUserId">The user who hosted playback on their device.</param>
     /// <param name="request">The media and progress payload.</param>
     void RecordProgress(Guid hostUserId, RecordWatchTogetherProgressRequest request);
+
+    /// <summary>
+    /// Applies selected pending media to the buddy's Jellyfin history and clears the host queue.
+    /// </summary>
+    /// <param name="buddyUserId">The buddy reviewing pending media.</param>
+    /// <param name="request">The host and selected media identifiers.</param>
+    void AcknowledgeHostQueue(Guid buddyUserId, AcknowledgeWatchTogetherQueueRequest request);
 }
