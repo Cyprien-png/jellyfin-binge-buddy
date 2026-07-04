@@ -92,6 +92,10 @@
         let chain = Promise.resolve();
 
         hostQueues.forEach(function (hostQueue) {
+            if (!hostQueue.media || !hostQueue.media.length) {
+                return;
+            }
+
             chain = chain.then(function () {
                 return BingeBuddyWatchTogetherPendingDialog.show({
                     hostId: hostQueue.hostId,

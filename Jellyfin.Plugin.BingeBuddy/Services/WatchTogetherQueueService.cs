@@ -57,7 +57,7 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
                 continue;
             }
 
-            var mediaItems = BuildMediaItems(host);
+            var mediaItems = BuildMediaItems(host, userId);
             if (mediaItems.Count == 0)
             {
                 continue;
@@ -75,7 +75,7 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
         return response;
     }
 
-    private List<WatchTogetherMediaQueueItemDto> BuildMediaItems(WatchTogetherHost host)
+    private List<WatchTogetherMediaQueueItemDto> BuildMediaItems(WatchTogetherHost host, Guid userId)
     {
         var mediaItems = new List<WatchTogetherMediaQueueItemDto>();
 
@@ -86,7 +86,7 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
                 continue;
             }
 
-            var item = MapMediaItem(movie.Id, movie.UserData, "Movie");
+            var item = MapMediaItem(movie.Id, movie.UserData, "Movie", userId);
             if (item is not null)
             {
                 mediaItems.Add(item);
@@ -104,7 +104,7 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
                         continue;
                     }
 
-                    var item = MapMediaItem(episode.Id, episode.UserData, "Episode");
+                    var item = MapMediaItem(episode.Id, episode.UserData, "Episode", userId);
                     if (item is not null)
                     {
                         mediaItems.Add(item);
@@ -119,28 +119,32 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
             .ToList();
     }
 
-    private WatchTogetherMediaQueueItemDto? MapMediaItem(Guid itemId, UserItemDataSnapshot? userData, string mediaType)
+    private WatchTogetherMediaQueueItemDto? MapMediaItem(
+        Guid itemId,
+        UserItemDataSnapshot? userData,
+        string mediaType,
+        Guid userId)
     {
         var watchedAt = userData?.WatchedAt;
         var played = userData?.Played ?? false;
         var playbackPositionTicks = userData?.PlaybackPositionTicks ?? 0;
-        var item = _libraryManager.GetItemById(itemId);
-        var runTimeTicks = item?.RunTimeTicks ?? 0;
 
-        if (item is null)
+        BaseItem? item;
+        try
         {
-            return new WatchTogetherMediaQueueItemDto
-            {
-                Id = itemId,
-                Name = "Unknown media",
-                SecondaryText = FormatFriendlyDateTime(watchedAt),
-                MediaType = mediaType,
-                WatchedAt = watchedAt,
-                Played = played,
-                PlaybackPositionTicks = playbackPositionTicks,
-                RunTimeTicks = runTimeTicks
-            };
+            item = _libraryManager.GetItemById<BaseItem>(itemId, userId);
         }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        if (item is not Movie and not Episode)
+        {
+            return null;
+        }
+
+        var runTimeTicks = item.RunTimeTicks ?? 0;
 
         var imageInfo = item.GetImageInfo(ImageType.Primary, 0);
         var hasPrimaryImage = imageInfo is not null;

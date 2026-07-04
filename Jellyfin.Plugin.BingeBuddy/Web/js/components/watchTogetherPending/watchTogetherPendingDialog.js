@@ -143,6 +143,15 @@
         let mediaItems = merged.media || [];
         let mediaListElementRef = { current: null };
 
+        if (!mediaItems.length) {
+            return Promise.resolve({
+                action: null,
+                hostId: merged.hostId,
+                hostName: hostName,
+                selectedMediaIds: []
+            });
+        }
+
         return Promise.all([
             ensureDialogModule(),
             ensureMediaSelectModule()
