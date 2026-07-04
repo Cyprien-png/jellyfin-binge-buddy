@@ -632,4 +632,39 @@
         clearAllDetailBuddiesState();
         scheduleDetailBuddiesRetry(true);
     });
+
+    function invalidateOverlayCache(itemIds) {
+        if (!itemIds || !itemIds.length) {
+            overlayCache.clear();
+            return;
+        }
+
+        itemIds.forEach(function (itemId) {
+            overlayCache.delete(normalizeGuid(itemId));
+        });
+    }
+
+    function clearProcessedCardMarkers() {
+        document.querySelectorAll(CARD_SELECTOR).forEach(function (container) {
+            delete container.dataset.bbWatcherProcessed;
+        });
+    }
+
+    function refreshOverlays(itemIds) {
+        invalidateOverlayCache(itemIds);
+        clearProcessedCardMarkers();
+        clearAllDetailBuddiesState();
+        scanCards(document);
+
+        let detailItemId = getDetailsItemIdFromHash();
+        if (detailItemId) {
+            queueFetch(detailItemId);
+        }
+
+        scheduleDetailBuddiesRetry(true);
+    }
+
+    window.BingeBuddyOverlays = {
+        refresh: refreshOverlays
+    };
 })();

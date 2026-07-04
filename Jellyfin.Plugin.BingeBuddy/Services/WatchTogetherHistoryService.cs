@@ -193,11 +193,10 @@ public class WatchTogetherHistoryService : IWatchTogetherHistoryService
             return;
         }
 
-        var userData = _userDataManager.GetUserData(user, item);
-        if (userData is null)
+        var userData = _userDataManager.GetUserData(user, item) ?? new UserItemData
         {
-            return;
-        }
+            Key = item.GetUserDataKeys()[0]
+        };
 
         if (!ShouldApplySnapshot(userData, snapshot))
         {

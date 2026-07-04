@@ -88,19 +88,84 @@
         });
     }
 
+    function loadProgressUiRefreshModule() {
+        return new Promise(function (resolve, reject) {
+            if (window.BingeBuddyProgressUiRefresh) {
+                resolve();
+                return;
+            }
+
+            let scriptId = 'binge-buddy-progress-ui-refresh-script';
+            let existing = document.getElementById(scriptId);
+            if (existing) {
+                existing.addEventListener('load', function () { resolve(); }, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+                return;
+            }
+
+            let script = document.createElement('script');
+            script.id = scriptId;
+            script.src = getAssetUrl('utils/progressUiRefresh.js');
+            script.addEventListener('load', function () { resolve(); }, { once: true });
+            script.addEventListener('error', reject, { once: true });
+            document.head.appendChild(script);
+        });
+    }
+
+    function refreshProgressUi(selectedMediaIds) {
+        let itemIds = (selectedMediaIds || []).filter(function (id) {
+            return !!id;
+        });
+
+        function refreshOverlaysWhenReady(attempt) {
+            if (!itemIds.length) {
+                return;
+            }
+
+            if (window.BingeBuddyOverlays && typeof BingeBuddyOverlays.refresh === 'function') {
+                BingeBuddyOverlays.refresh(itemIds);
+                return;
+            }
+
+            if ((attempt || 0) < 30) {
+                setTimeout(function () {
+                    refreshOverlaysWhenReady((attempt || 0) + 1);
+                }, 100);
+            }
+        }
+
+        refreshOverlaysWhenReady(0);
+
+        if (!itemIds.length) {
+            return Promise.resolve();
+        }
+
+        return loadProgressUiRefreshModule().then(function () {
+            if (window.BingeBuddyProgressUiRefresh && BingeBuddyProgressUiRefresh.refreshNativeCards) {
+                return BingeBuddyProgressUiRefresh.refreshNativeCards(itemIds);
+            }
+        }).catch(function (error) {
+            console.warn('[BingeBuddy] Native card refresh failed.', error);
+        });
+    }
+
     function acknowledgeHostQueue(hostQueue, dialogResult) {
         if (!dialogResult || dialogResult.action !== 'continue') {
             return Promise.resolve();
         }
+
+        let selectedMediaIds = dialogResult.selectedMediaIds || [];
 
         return ApiClient.ajax({
             type: 'POST',
             url: ApiClient.getUrl('BingeBuddy/WatchTogether/Queue/Acknowledge'),
             data: JSON.stringify({
                 hostId: hostQueue.hostId,
-                selectedMediaIds: dialogResult.selectedMediaIds || []
+                selectedMediaIds: selectedMediaIds
             }),
             contentType: 'application/json'
+        }).then(function () {
+            return refreshProgressUi(selectedMediaIds);
         }).catch(function (error) {
             console.warn('[BingeBuddy] Failed to acknowledge watch together queue.', error);
         });

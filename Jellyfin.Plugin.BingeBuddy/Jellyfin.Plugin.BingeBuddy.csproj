@@ -34,6 +34,7 @@
     <EmbeddedResource Include="Web\js\plugin.js" />
     <EmbeddedResource Include="Web\js\utils\assetUrl.js" />
     <EmbeddedResource Include="Web\js\utils\jellyfinHooks.js" />
+    <EmbeddedResource Include="Web\js\utils\progressUiRefresh.js" />
     <EmbeddedResource Include="Web\js\components\navbar\navbar.js" />
     <EmbeddedResource Include="Web\js\components\navbar\navbar.css" />
     <EmbeddedResource Include="Web\js\components\dialog\dialog.js" />
