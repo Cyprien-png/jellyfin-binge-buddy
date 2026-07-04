@@ -25,16 +25,21 @@
             return {
                 played: false,
                 playbackPositionTicks: 0,
+                seasonIndexNumber: null,
                 episodeIndexNumber: null,
                 episodeRunTimeTicks: 0
             };
         }
 
+        let seasonIndexNumber = raw.seasonIndexNumber ?? raw.SeasonIndexNumber;
         let episodeIndexNumber = raw.episodeIndexNumber ?? raw.EpisodeIndexNumber;
 
         return {
             played: !!(raw.played || raw.Played),
             playbackPositionTicks: Number(raw.playbackPositionTicks || raw.PlaybackPositionTicks || 0),
+            seasonIndexNumber: seasonIndexNumber === undefined || seasonIndexNumber === null
+                ? null
+                : Number(seasonIndexNumber),
             episodeIndexNumber: episodeIndexNumber === undefined || episodeIndexNumber === null
                 ? null
                 : Number(episodeIndexNumber),
@@ -107,6 +112,21 @@
         document.head.appendChild(link);
     }
 
+    function formatEpisodeLine(progress) {
+        let season = progress.seasonIndexNumber;
+        let episode = progress.episodeIndexNumber;
+
+        if (season !== null && season !== undefined && episode !== null && episode !== undefined) {
+            return 'Season ' + season + ' · Episode ' + episode;
+        }
+
+        if (episode !== null && episode !== undefined) {
+            return 'Episode ' + episode;
+        }
+
+        return '';
+    }
+
     function createRow(options) {
         options = options || {};
 
@@ -149,13 +169,14 @@
 
         row.appendChild(meta);
 
-        if (options.showEpisodeLine
-            && progress.episodeIndexNumber !== null
-            && progress.episodeIndexNumber !== undefined) {
-            let episodeLine = document.createElement('div');
-            episodeLine.className = 'bb-detail-progress-episode';
-            episodeLine.textContent = 'Episode ' + progress.episodeIndexNumber;
-            row.appendChild(episodeLine);
+        if (options.showEpisodeLine) {
+            let episodeLineText = formatEpisodeLine(progress);
+            if (episodeLineText) {
+                let episodeLine = document.createElement('div');
+                episodeLine.className = 'bb-detail-progress-episode';
+                episodeLine.textContent = episodeLineText;
+                row.appendChild(episodeLine);
+            }
         }
 
         let track = document.createElement('div');
@@ -190,6 +211,7 @@
         formatWatchedDuration: formatWatchedDuration,
         formatCompactStatus: formatCompactStatus,
         formatProgressStatus: formatProgressStatus,
+        formatEpisodeLine: formatEpisodeLine,
         ensureStyles: ensureStyles,
         createRow: createRow,
         createSectionHeading: createSectionHeading

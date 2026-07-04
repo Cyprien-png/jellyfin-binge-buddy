@@ -159,6 +159,7 @@
             return {
                 played: false,
                 playbackPositionTicks: 0,
+                seasonIndexNumber: null,
                 episodeIndexNumber: null,
                 episodeRunTimeTicks: 0
             };
@@ -177,6 +178,7 @@
             imageUrl: raw.ImageUrl || raw.imageUrl || '',
             played: progress.played,
             playbackPositionTicks: progress.playbackPositionTicks,
+            seasonIndexNumber: progress.seasonIndexNumber,
             episodeIndexNumber: progress.episodeIndexNumber,
             episodeRunTimeTicks: progress.episodeRunTimeTicks
         };
@@ -188,6 +190,7 @@
                 watchers: [],
                 runTimeTicks: 0,
                 isSeason: false,
+                isSeries: false,
                 currentUser: parseWatchProgress(null)
             };
         }
@@ -197,6 +200,7 @@
                 watchers: raw.map(parseWatcher),
                 runTimeTicks: 0,
                 isSeason: false,
+                isSeries: false,
                 currentUser: parseWatchProgress(null)
             };
         }
@@ -205,6 +209,7 @@
             watchers: (raw.watchers || raw.Watchers || []).map(parseWatcher),
             runTimeTicks: Number(raw.runTimeTicks || raw.RunTimeTicks || 0),
             isSeason: !!(raw.isSeason || raw.IsSeason),
+            isSeries: !!(raw.isSeries || raw.IsSeries),
             currentUser: parseWatchProgress(raw.currentUser || raw.CurrentUser)
         };
     }
@@ -224,11 +229,11 @@
 
         section.appendChild(watchProgress.createSectionHeading('Progress'));
 
-        let isSeason = overlay.isSeason;
-        let youRuntime = isSeason
+        let isEpisodeScoped = overlay.isSeason || overlay.isSeries;
+        let youRuntime = isEpisodeScoped
             ? watchProgress.getProgressRuntime(currentUser, 0)
             : overlay.runTimeTicks;
-        let themRuntime = isSeason
+        let themRuntime = isEpisodeScoped
             ? watchProgress.getProgressRuntime(watcher, 0)
             : overlay.runTimeTicks;
 
@@ -237,14 +242,14 @@
             progress: currentUser,
             runTimeTicks: youRuntime,
             variant: 'you',
-            showEpisodeLine: isSeason
+            showEpisodeLine: isEpisodeScoped
         }));
         section.appendChild(watchProgress.createRow({
             labelText: 'Them',
             progress: watcher,
             runTimeTicks: themRuntime,
             variant: 'them',
-            showEpisodeLine: isSeason
+            showEpisodeLine: isEpisodeScoped
         }));
 
         return section;
@@ -400,6 +405,10 @@
 
         if (overlay.isSeason) {
             section.classList.add('bb-detail-buddies-season');
+        }
+
+        if (overlay.isSeries) {
+            section.classList.add('bb-detail-buddies-series');
         }
 
         let title = document.createElement('h2');

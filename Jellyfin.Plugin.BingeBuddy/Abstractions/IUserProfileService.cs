@@ -32,6 +32,7 @@ public interface IUserProfileService
     /// <param name="avatarSize">The avatar size in pixels.</param>
     /// <param name="episodeIndexNumber">The highest started episode index within a season, when applicable.</param>
     /// <param name="episodeRunTimeTicks">The runtime of the referenced episode in Jellyfin ticks.</param>
+    /// <param name="seasonIndexNumber">The season index for <paramref name="episodeIndexNumber"/>, when applicable.</param>
     /// <returns>The mapped DTO, if the user exists.</returns>
     GroupWatcherDto? MapWatcher(
         Guid userId,
@@ -39,5 +40,6 @@ public interface IUserProfileService
         long playbackPositionTicks,
         int avatarSize = 88,
         int? episodeIndexNumber = null,
-        long episodeRunTimeTicks = 0);
+        long episodeRunTimeTicks = 0,
+        int? seasonIndexNumber = null);
 }
