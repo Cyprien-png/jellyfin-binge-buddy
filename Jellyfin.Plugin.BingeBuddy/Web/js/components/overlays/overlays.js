@@ -27,6 +27,7 @@
     let detailRetryTimer = null;
     let detailScanTimer = null;
     let observer = null;
+    let overlayFetchGeneration = 0;
 
     function normalizeGuid(value) {
         return (value || '').toString().replace(/-/g, '').toLowerCase();
@@ -552,7 +553,30 @@
         }, 120);
     }
 
+    function applyOverlayResponse(response) {
+        Object.keys(response || {}).forEach(function (key) {
+            overlayCache.set(normalizeGuid(key), parseItemOverlay(response[key]));
+        });
+    }
+
+    function fetchOverlaysForItemIds(itemIds) {
+        if (!itemIds.length || !ApiClient.getCurrentUserId || !ApiClient.getCurrentUserId()) {
+            return Promise.resolve({});
+        }
+
+        let query = itemIds.map(function (itemId) {
+            return 'itemIds=' + encodeURIComponent(itemId);
+        }).join('&');
+
+        return ApiClient.ajax({
+            type: 'GET',
+            url: ApiClient.getUrl('BingeBuddy/Overlays?' + query),
+            dataType: 'json'
+        });
+    }
+
     function fetchPendingOverlays() {
+        let generation = overlayFetchGeneration;
         let itemIds = Array.from(pendingItemIds);
         pendingItemIds.clear();
 
@@ -560,18 +584,12 @@
             return;
         }
 
-        let query = itemIds.map(function (itemId) {
-            return 'itemIds=' + encodeURIComponent(itemId);
-        }).join('&');
+        fetchOverlaysForItemIds(itemIds).then(function (response) {
+            if (generation !== overlayFetchGeneration) {
+                return;
+            }
 
-        ApiClient.ajax({
-            type: 'GET',
-            url: ApiClient.getUrl('BingeBuddy/Overlays?' + query),
-            dataType: 'json'
-        }).then(function (response) {
-            Object.keys(response || {}).forEach(function (key) {
-                overlayCache.set(normalizeGuid(key), parseItemOverlay(response[key]));
-            });
+            applyOverlayResponse(response);
 
             document.querySelectorAll(CARD_SELECTOR).forEach(function (container) {
                 let itemId = extractItemId(container);
@@ -585,6 +603,62 @@
                 }
             });
 
+            scheduleDetailBuddiesRetry(true);
+        });
+    }
+
+    function refreshDetailBuddies(itemIds) {
+        let detailItemId = getDetailsItemIdFromHash();
+        if (!detailItemId) {
+            return Promise.resolve();
+        }
+
+        if (detailRetryTimer) {
+            clearTimeout(detailRetryTimer);
+            detailRetryTimer = null;
+        }
+
+        clearAllDetailBuddiesState();
+
+        let fetchIds = [detailItemId];
+        (itemIds || []).forEach(function (id) {
+            if (id && normalizeGuid(id) !== normalizeGuid(detailItemId)) {
+                fetchIds.push(id);
+            }
+        });
+
+        fetchIds.forEach(function (id) {
+            overlayCache.delete(normalizeGuid(id));
+        });
+
+        let generation = overlayFetchGeneration;
+
+        return fetchOverlaysForItemIds(fetchIds).then(function (response) {
+            if (generation !== overlayFetchGeneration) {
+                return;
+            }
+
+            applyOverlayResponse(response);
+
+            let mountPoint = findDetailMountPoint();
+            if (!mountPoint) {
+                scheduleDetailBuddiesRetry(true);
+                return;
+            }
+
+            let currentDetailId = getDetailsItemIdFromHash();
+            if (!currentDetailId || normalizeGuid(currentDetailId) !== normalizeGuid(detailItemId)) {
+                return;
+            }
+
+            let overlay = overlayCache.get(normalizeGuid(detailItemId));
+            if (!overlay || !overlay.watchers || !overlay.watchers.length) {
+                return;
+            }
+
+            renderDetailBuddiesSection(mountPoint, detailItemId, overlay);
+        }).catch(function (err) {
+            console.warn('[BingeBuddy] Failed to refresh detail buddies.', err);
             scheduleDetailBuddiesRetry(true);
         });
     }
@@ -660,20 +734,36 @@
     }
 
     function refreshOverlays(itemIds) {
+        overlayFetchGeneration++;
+
         invalidateOverlayCache(itemIds);
+
+        let detailItemId = getDetailsItemIdFromHash();
+        if (detailItemId) {
+            overlayCache.delete(normalizeGuid(detailItemId));
+        }
+
         clearProcessedCardMarkers();
         clearAllDetailBuddiesState();
         scanCards(document);
 
-        let detailItemId = getDetailsItemIdFromHash();
+        (itemIds || []).forEach(function (id) {
+            queueFetch(id);
+        });
+
         if (detailItemId) {
             queueFetch(detailItemId);
         }
 
+        let detailRefresh = refreshDetailBuddies(itemIds);
+
         scheduleDetailBuddiesRetry(true);
+
+        return detailRefresh;
     }
 
     window.BingeBuddyOverlays = {
-        refresh: refreshOverlays
+        refresh: refreshOverlays,
+        refreshDetailBuddies: refreshDetailBuddies
     };
 })();

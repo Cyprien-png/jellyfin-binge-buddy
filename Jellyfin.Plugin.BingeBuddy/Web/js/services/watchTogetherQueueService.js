@@ -119,33 +119,43 @@
 
         function refreshOverlaysWhenReady(attempt) {
             if (!itemIds.length) {
-                return;
+                return Promise.resolve();
             }
 
             if (window.BingeBuddyOverlays && typeof BingeBuddyOverlays.refresh === 'function') {
-                BingeBuddyOverlays.refresh(itemIds);
-                return;
+                let result = BingeBuddyOverlays.refresh(itemIds);
+                if (result && typeof result.then === 'function') {
+                    return result;
+                }
+
+                return Promise.resolve();
             }
 
             if ((attempt || 0) < 30) {
-                setTimeout(function () {
-                    refreshOverlaysWhenReady((attempt || 0) + 1);
-                }, 100);
+                return new Promise(function (resolve) {
+                    setTimeout(function () {
+                        refreshOverlaysWhenReady((attempt || 0) + 1).then(resolve);
+                    }, 100);
+                });
             }
+
+            return Promise.resolve();
         }
 
-        refreshOverlaysWhenReady(0);
+        let overlaysRefresh = refreshOverlaysWhenReady(0);
 
         if (!itemIds.length) {
             return Promise.resolve();
         }
 
-        return loadProgressUiRefreshModule().then(function () {
+        let nativeRefresh = loadProgressUiRefreshModule().then(function () {
             if (window.BingeBuddyProgressUiRefresh && BingeBuddyProgressUiRefresh.refreshNativeCards) {
                 return BingeBuddyProgressUiRefresh.refreshNativeCards(itemIds);
             }
-        }).catch(function (error) {
-            console.warn('[BingeBuddy] Native card refresh failed.', error);
+        });
+
+        return Promise.all([overlaysRefresh, nativeRefresh]).catch(function (error) {
+            console.warn('[BingeBuddy] Progress UI refresh failed.', error);
         });
     }
 
