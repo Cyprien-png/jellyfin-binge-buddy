@@ -32,8 +32,31 @@
     <None Remove="Configuration\configPage.html" />
     <EmbeddedResource Include="Configuration\configPage.html" />
     <EmbeddedResource Include="Web\js\plugin.js" />
-    <EmbeddedResource Include="Web\js\overlays.js" />
-    <EmbeddedResource Include="Web\js\overlays.css" />
+    <EmbeddedResource Include="Web\js\utils\assetUrl.js" />
+    <EmbeddedResource Include="Web\js\utils\jellyfinHooks.js" />
+    <EmbeddedResource Include="Web\js\utils\progressUiRefresh.js" />
+    <EmbeddedResource Include="Web\js\components\navbar\navbar.js" />
+    <EmbeddedResource Include="Web\js\components\navbar\navbar.css" />
+    <EmbeddedResource Include="Web\js\components\dialog\dialog.js" />
+    <EmbeddedResource Include="Web\js\components\dialog\dialog.css" />
+    <EmbeddedResource Include="Web\js\components\watchTogether\watchTogetherDialog.js" />
+    <EmbeddedResource Include="Web\js\components\watchTogether\watchTogetherDialog.css" />
+    <EmbeddedResource Include="Web\js\components\userSelect\userSelect.js" />
+    <EmbeddedResource Include="Web\js\components\userSelect\userSelect.css" />
+    <EmbeddedResource Include="Web\js\components\mediaSelect\mediaSelect.js" />
+    <EmbeddedResource Include="Web\js\components\mediaSelect\mediaSelect.css" />
+    <EmbeddedResource Include="Web\js\components\watchProgress\watchProgress.js" />
+    <EmbeddedResource Include="Web\js\components\watchProgress\watchProgress.css" />
+    <EmbeddedResource Include="Web\js\components\watchTogetherPending\watchTogetherPendingDialog.js" />
+    <EmbeddedResource Include="Web\js\components\watchTogetherPending\watchTogetherPendingDialog.css" />
+    <EmbeddedResource Include="Web\js\components\overlays\overlays.js" />
+    <EmbeddedResource Include="Web\js\components\overlays\overlays.css" />
+    <EmbeddedResource Include="Web\js\services\watchTogetherSession.js" />
+    <EmbeddedResource Include="Web\js\services\watchTogetherContext.js" />
+    <EmbeddedResource Include="Web\js\services\watchTogetherHistoryService.js" />
+    <EmbeddedResource Include="Web\js\services\watchTogetherQueueService.js" />
+    <EmbeddedResource Include="Web\js\services\playbackGateService.js" />
+    <EmbeddedResource Include="Web\js\services\playbackStopService.js" />
   </ItemGroup>
 
 </Project>

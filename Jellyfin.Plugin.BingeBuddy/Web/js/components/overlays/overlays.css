@@ -43,15 +43,6 @@
     margin-top: 1.5em;
 }
 
-.bb-detail-buddies-season {
-    margin-top: 0;
-    margin-bottom: 1.5em;
-}
-
-.detailPagePrimaryContent > .bb-detail-buddies {
-    margin-bottom: 1.25em;
-}
-
 .bb-detail-buddies-grid {
     display: flex;
     flex-wrap: wrap;
@@ -71,11 +62,6 @@
     border-radius: 0.5rem;
     background: rgba(255, 255, 255, 0.04);
     box-sizing: border-box;
-}
-
-.bb-detail-buddies-season .bb-detail-buddy-card {
-    width: 22rem;
-    max-width: 22rem;
 }
 
 .bb-detail-buddy-avatar {
@@ -120,75 +106,4 @@
     gap: 0.55rem;
     width: 100%;
     margin-top: 0.15rem;
-}
-
-.bb-detail-progress-heading {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    opacity: 0.72;
-    text-transform: uppercase;
-}
-
-.bb-detail-progress-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-}
-
-.bb-detail-progress-meta {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem;
-    width: 100%;
-    min-width: 0;
-}
-
-.bb-detail-progress-label {
-    flex-shrink: 0;
-    font-size: 0.74rem;
-    font-weight: 600;
-    opacity: 0.9;
-}
-
-.bb-detail-progress-episode {
-    font-size: 0.72rem;
-    font-weight: 600;
-    line-height: 1.2;
-    opacity: 0.88;
-}
-
-.bb-detail-progress-status {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.68rem;
-    line-height: 1.25;
-    text-align: right;
-    opacity: 0.82;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.bb-detail-progress-track {
-    width: 100%;
-    height: 0.45rem;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
-    overflow: hidden;
-}
-
-.bb-detail-progress-fill {
-    height: 100%;
-    border-radius: 999px;
-    transition: width 0.2s ease;
-}
-
-.bb-detail-progress-fill-you {
-    background: #9e9e9e;
-}
-
-.bb-detail-progress-fill-them {
-    background: #f17471;
 }

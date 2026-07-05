@@ -21,18 +21,34 @@ public class BingeBuddyClientController : ControllerBase
     private const string JellyfinUserIdClaim = "Jellyfin-UserId";
 
     private readonly IBingeBuddyOverlayService _overlayService;
+    private readonly IGroupMembershipService _groupMembershipService;
+    private readonly IUserProfileService _userProfileService;
+    private readonly IWatchTogetherHistoryService _watchTogetherHistoryService;
+    private readonly IWatchTogetherQueueService _watchTogetherQueueService;
     private readonly ILogger<BingeBuddyClientController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BingeBuddyClientController"/> class.
     /// </summary>
     /// <param name="overlayService">The overlay service.</param>
+    /// <param name="groupMembershipService">The group membership service.</param>
+    /// <param name="userProfileService">The user profile service.</param>
+    /// <param name="watchTogetherHistoryService">The watch-together history service.</param>
+    /// <param name="watchTogetherQueueService">The watch-together queue service.</param>
     /// <param name="logger">The logger.</param>
     public BingeBuddyClientController(
         IBingeBuddyOverlayService overlayService,
+        IGroupMembershipService groupMembershipService,
+        IUserProfileService userProfileService,
+        IWatchTogetherHistoryService watchTogetherHistoryService,
+        IWatchTogetherQueueService watchTogetherQueueService,
         ILogger<BingeBuddyClientController> logger)
     {
         _overlayService = overlayService;
+        _groupMembershipService = groupMembershipService;
+        _userProfileService = userProfileService;
+        _watchTogetherHistoryService = watchTogetherHistoryService;
+        _watchTogetherQueueService = watchTogetherQueueService;
         _logger = logger;
     }
 
@@ -69,6 +85,42 @@ public class BingeBuddyClientController : ControllerBase
     }
 
     /// <summary>
+    /// Gets binge buddies (group mates) for the authenticated user.
+    /// </summary>
+    /// <returns>Buddies with profile image metadata.</returns>
+    [HttpGet("Buddies")]
+    [Authorize]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult<IReadOnlyList<GroupUserDto>> GetBuddies()
+    {
+        var userId = GetAuthenticatedUserId();
+        if (userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var buddyIds = _groupMembershipService.GetVisibleMemberIds(userId);
+            var buddies = buddyIds
+                .Select(id => _userProfileService.MapUser(id))
+                .Where(user => user is not null)
+                .Select(user => user!)
+                .OrderBy(user => user.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return Ok(buddies);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load buddies for user {UserId}", userId);
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
     /// Gets watcher overlays for the requested media items.
     /// </summary>
     /// <param name="itemIds">The media item identifiers.</param>
@@ -98,6 +150,109 @@ public class BingeBuddyClientController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to build overlays for user {UserId}", userId);
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
+    /// Gets pending watch-together media grouped by host for the authenticated user.
+    /// </summary>
+    /// <returns>The grouped queue payload.</returns>
+    [HttpGet("WatchTogether/Queue")]
+    [Authorize]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult<WatchTogetherQueueResponse> GetWatchTogetherQueue()
+    {
+        var userId = GetAuthenticatedUserId();
+        if (userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            return Ok(_watchTogetherQueueService.GetQueueForUser(userId));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load watch together queue for user {UserId}", userId);
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
+    /// Records watch-together progress for buddies in the active session.
+    /// </summary>
+    /// <param name="request">The progress payload.</param>
+    /// <returns>No content when saved.</returns>
+    [HttpPost("WatchTogether/Progress")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult RecordWatchTogetherProgress([FromBody] RecordWatchTogetherProgressRequest request)
+    {
+        var hostUserId = GetAuthenticatedUserId();
+        if (hostUserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        if (request is null || request.BuddyUserIds.Count == 0)
+        {
+            return BadRequest();
+        }
+
+        if (!request.MovieId.HasValue && request.Episode is null)
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            _watchTogetherHistoryService.RecordProgress(hostUserId, request);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to record watch together progress for host {HostUserId}", hostUserId);
+            return StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
+    /// Acknowledges pending watch-together media from a host for the authenticated user.
+    /// </summary>
+    /// <param name="request">The host and selected media identifiers.</param>
+    /// <returns>No content when processed.</returns>
+    [HttpPost("WatchTogether/Queue/Acknowledge")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult AcknowledgeWatchTogetherQueue([FromBody] AcknowledgeWatchTogetherQueueRequest request)
+    {
+        var buddyUserId = GetAuthenticatedUserId();
+        if (buddyUserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        if (request is null || request.HostId == Guid.Empty)
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            _watchTogetherHistoryService.AcknowledgeHostQueue(buddyUserId, request);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to acknowledge watch together queue for user {UserId}", buddyUserId);
             return StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
