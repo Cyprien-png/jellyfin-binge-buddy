@@ -317,6 +317,7 @@
         loadBuddies: loadBuddies,
         ensureStyles: ensureStyles,
         ensureReady: ensureReady,
+        createUserAvatarElement: createUserAvatarElement,
         createRow: createRow,
         render: render,
         getSelectedUserIds: getSelectedUserIds,

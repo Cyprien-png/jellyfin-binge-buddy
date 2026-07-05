@@ -78,6 +78,8 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
                 {
                     HostId = host.HostId,
                     HostName = hostProfile?.Name ?? "Unknown user",
+                    HostHasPrimaryImage = hostProfile?.HasPrimaryImage ?? false,
+                    HostImageUrl = hostProfile?.ImageUrl,
                     Media = mediaItems
                 });
             }

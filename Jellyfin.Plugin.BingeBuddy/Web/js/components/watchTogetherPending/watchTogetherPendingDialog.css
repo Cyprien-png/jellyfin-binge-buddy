@@ -1,3 +1,57 @@
+.bb-watch-together-pending-content {
+    padding-top: 0.85rem;
+}
+
+.bb-watch-together-pending-intro {
+    flex-shrink: 0;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bb-watch-together-pending-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.55rem;
+}
+
+.bb-watch-together-pending-profile .bb-user-avatar-wrap {
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 164, 220, 0.15);
+    color: #00a4dc;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.bb-watch-together-pending-profile .bb-user-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.bb-watch-together-pending-host-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.bb-watch-together-pending-message {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.72);
+}
+
 .bb-watch-together-pending-scroll {
     flex: 1 1 0;
     min-height: 0;

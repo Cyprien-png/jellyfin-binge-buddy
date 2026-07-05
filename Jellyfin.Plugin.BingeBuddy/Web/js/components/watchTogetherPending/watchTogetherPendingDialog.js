@@ -96,12 +96,49 @@
         });
     }
 
-    function buildTitle(hostName) {
-        return 'Binge Buddy: Media you watched with ' + hostName;
+    function ensureUserSelectModule() {
+        return loadScriptModule(
+            'binge-buddy-user-select-script',
+            'components/userSelect/userSelect.js',
+            function () { return window.BingeBuddyUserSelect; }
+        ).then(function () {
+            BingeBuddyUserSelect.ensureStyles();
+        });
     }
 
-    function buildDescription(hostName) {
-        return 'You watched this media together with ' + hostName + ' on their device.';
+    function buildTitle() {
+        return 'Binge Buddy';
+    }
+
+    function renderHostIntro(host) {
+        let intro = document.createElement('div');
+        intro.className = 'bb-watch-together-pending-intro';
+
+        let profile = document.createElement('div');
+        profile.className = 'bb-watch-together-pending-profile';
+
+        let user = BingeBuddyUserSelect.normalizeUser({
+            Id: host.hostId,
+            Name: host.hostName,
+            ImageUrl: host.hostImageUrl,
+            HasPrimaryImage: host.hostHasPrimaryImage
+        });
+
+        profile.appendChild(BingeBuddyUserSelect.createUserAvatarElement(user));
+
+        let name = document.createElement('span');
+        name.className = 'bb-watch-together-pending-host-name';
+        name.textContent = host.hostName;
+        profile.appendChild(name);
+
+        let message = document.createElement('p');
+        message.className = 'bb-watch-together-pending-message';
+        message.textContent = 'Hi, we watched these together. Select the media you\'ve seen to update your progress.';
+
+        intro.appendChild(profile);
+        intro.appendChild(message);
+
+        return intro;
     }
 
     function getDefaultSelectedMediaIds(mediaItems) {
@@ -483,16 +520,24 @@
 
         return Promise.all([
             ensureDialogModule(),
-            ensureMediaSelectModule()
+            ensureMediaSelectModule(),
+            ensureUserSelectModule()
         ]).then(function () {
             let dialogOptions = {
-                title: merged.title || buildTitle(hostName),
-                text: merged.text || buildDescription(hostName),
+                title: merged.title || buildTitle(),
+                text: '',
                 buttons: merged.buttons,
                 maxWidth: merged.maxWidth,
                 size: merged.size,
                 requireContinue: merged.requireContinue !== false,
                 renderContent: function (container) {
+                    container.classList.add('bb-watch-together-pending-content');
+                    container.appendChild(renderHostIntro({
+                        hostId: merged.hostId,
+                        hostName: hostName,
+                        hostImageUrl: merged.hostImageUrl,
+                        hostHasPrimaryImage: merged.hostHasPrimaryImage
+                    }));
                     mediaListElementRef.current = renderMediaTree(container, mediaItems, {
                         selectedMediaIds: merged.selectedMediaIds || getDefaultSelectedMediaIds(mediaItems),
                         emptyTitle: merged.emptyMediaTitle,

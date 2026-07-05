@@ -64,6 +64,8 @@
         return {
             hostId: host.HostId || host.hostId,
             hostName: host.HostName || host.hostName || 'your buddy',
+            hostImageUrl: host.HostImageUrl || host.hostImageUrl || null,
+            hostHasPrimaryImage: !!(host.HostHasPrimaryImage || host.hostHasPrimaryImage),
             media: host.Media || host.media || []
         };
     }
@@ -193,6 +195,8 @@
                 return BingeBuddyWatchTogetherPendingDialog.show({
                     hostId: hostQueue.hostId,
                     hostName: hostQueue.hostName,
+                    hostImageUrl: hostQueue.hostImageUrl,
+                    hostHasPrimaryImage: hostQueue.hostHasPrimaryImage,
                     media: hostQueue.media
                 }).then(function (dialogResult) {
                     return acknowledgeHostQueue(hostQueue, dialogResult);

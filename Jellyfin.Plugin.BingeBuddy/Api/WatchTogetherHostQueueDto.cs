@@ -20,6 +20,16 @@ public class WatchTogetherHostQueueDto
     public string HostName { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets a value indicating whether the host has a profile image.
+    /// </summary>
+    public bool HostHasPrimaryImage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the relative profile image URL for the host.
+    /// </summary>
+    public string? HostImageUrl { get; set; }
+
+    /// <summary>
     /// Gets or sets the pending media items for this host.
     /// </summary>
     [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Required for JSON serialization.")]
