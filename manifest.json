@@ -12,6 +12,14 @@
     ],
     "versions": [
       {
+        "version": "1.0.0.0",
+        "changelog": "- feat: buddy progress UI and Watch together sessions @Cyprien-png (#5)",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Cyprien-png/jellyfin-binge-buddy/releases/download/v1.0.0/jellyfin-binge-buddy_1.0.0.0.zip",
+        "checksum": "256448bf97b03424dc8253af14361bb3",
+        "timestamp": "2026-07-05T11:53:41Z"
+      },
+      {
         "version": "0.2.0.0",
         "changelog": "Initial release with group management in plugin settings.",
         "targetAbi": "10.11.0.0",
