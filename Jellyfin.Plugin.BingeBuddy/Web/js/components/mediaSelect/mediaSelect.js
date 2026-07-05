@@ -50,7 +50,19 @@
             WatchedAt: watchedAt,
             Played: !!(media.Played || media.played),
             PlaybackPositionTicks: Number(media.PlaybackPositionTicks || media.playbackPositionTicks || 0),
-            RunTimeTicks: Number(media.RunTimeTicks || media.runTimeTicks || 0)
+            RunTimeTicks: Number(media.RunTimeTicks || media.runTimeTicks || 0),
+            SeriesId: media.SeriesId || media.seriesId || null,
+            SeriesName: media.SeriesName || media.seriesName || '',
+            SeriesHasLogo: !!(media.SeriesHasLogo || media.seriesHasLogo),
+            SeriesLogoUrl: media.SeriesLogoUrl || media.seriesLogoUrl || null,
+            SeriesHasBackdrop: !!(media.SeriesHasBackdrop || media.seriesHasBackdrop),
+            SeriesBackdropUrl: media.SeriesBackdropUrl || media.seriesBackdropUrl || null,
+            SeasonIndexNumber: media.SeasonIndexNumber != null
+                ? media.SeasonIndexNumber
+                : (media.seasonIndexNumber != null ? media.seasonIndexNumber : null),
+            EpisodeIndexNumber: media.EpisodeIndexNumber != null
+                ? media.EpisodeIndexNumber
+                : (media.episodeIndexNumber != null ? media.episodeIndexNumber : null)
         };
     }
 
@@ -307,6 +319,8 @@
         formatFriendlyDateTime: formatFriendlyDateTime,
         ensureStyles: ensureStyles,
         createRow: createRow,
+        createEmptyState: createEmptyState,
+        createMediaThumbnailElement: createMediaThumbnailElement,
         render: render,
         getSelectedMediaIds: getSelectedMediaIds,
         setSelectedMediaIds: setSelectedMediaIds,

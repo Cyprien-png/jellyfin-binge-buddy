@@ -20,6 +20,9 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
 {
     private const int MediaThumbnailWidth = 213;
     private const int MediaThumbnailHeight = 120;
+    private const int SeriesLogoMaxWidth = 320;
+    private const int SeriesLogoMaxHeight = 80;
+    private const int SeriesBackdropMaxWidth = 1280;
 
     private readonly IUserProfileService _userProfileService;
     private readonly ILibraryManager _libraryManager;
@@ -132,7 +135,9 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
         }
 
         return mediaItems
-            .OrderByDescending(item => item.WatchedAt ?? DateTime.MinValue)
+            .OrderBy(item => item.WatchedAt ?? DateTime.MaxValue)
+            .ThenBy(item => item.SeasonIndexNumber ?? int.MaxValue)
+            .ThenBy(item => item.EpisodeIndexNumber ?? int.MaxValue)
             .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
@@ -153,22 +158,16 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
         }
 
         var runTimeTicks = item.RunTimeTicks ?? 0;
-
         var imageInfo = item.GetImageInfo(ImageType.Primary, 0);
         var hasPrimaryImage = imageInfo is not null;
         string? imageUrl = null;
 
         if (hasPrimaryImage)
         {
-            imageUrl = string.Format(
-                CultureInfo.InvariantCulture,
-                "/Items/{0}/Images/Primary?maxHeight={1}&maxWidth={2}",
-                itemId,
-                MediaThumbnailHeight,
-                MediaThumbnailWidth);
+            imageUrl = BuildImageUrl(itemId);
         }
 
-        return new WatchTogetherMediaQueueItemDto
+        var dto = new WatchTogetherMediaQueueItemDto
         {
             Id = itemId,
             Name = BuildDisplayName(item),
@@ -181,46 +180,109 @@ public class WatchTogetherQueueService : IWatchTogetherQueueService
             PlaybackPositionTicks = playbackPositionTicks,
             RunTimeTicks = runTimeTicks
         };
+
+        if (item is Episode episode)
+        {
+            ApplySeriesMetadata(dto, episode);
+        }
+
+        return dto;
+    }
+
+    private void ApplySeriesMetadata(WatchTogetherMediaQueueItemDto dto, Episode episode)
+    {
+        dto.SeasonIndexNumber = episode.ParentIndexNumber;
+        dto.EpisodeIndexNumber = episode.IndexNumber;
+        dto.SeriesId = episode.SeriesId == Guid.Empty ? null : episode.SeriesId;
+        dto.Name = BuildEpisodeDisplayName(episode);
+
+        var series = episode.Series;
+        if (series is null && dto.SeriesId.HasValue)
+        {
+            series = _libraryManager.GetItemById(dto.SeriesId.Value) as Series;
+        }
+
+        if (series is null)
+        {
+            return;
+        }
+
+        dto.SeriesName = series.Name;
+        var logoImageInfo = series.GetImageInfo(ImageType.Logo, 0);
+        dto.SeriesHasLogo = logoImageInfo is not null;
+
+        if (dto.SeriesHasLogo)
+        {
+            dto.SeriesLogoUrl = BuildLogoImageUrl(series.Id);
+        }
+
+        var backdropImageInfo = series.GetImageInfo(ImageType.Backdrop, 0);
+        dto.SeriesHasBackdrop = backdropImageInfo is not null;
+
+        if (dto.SeriesHasBackdrop)
+        {
+            dto.SeriesBackdropUrl = BuildBackdropImageUrl(series.Id);
+        }
+    }
+
+    private static string BuildBackdropImageUrl(Guid itemId)
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "/Items/{0}/Images/Backdrop/0?maxWidth={1}&quality=80",
+            itemId,
+            SeriesBackdropMaxWidth);
+    }
+
+    private static string BuildLogoImageUrl(Guid itemId)
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "/Items/{0}/Images/Logo?maxHeight={1}&maxWidth={2}&quality=90",
+            itemId,
+            SeriesLogoMaxHeight,
+            SeriesLogoMaxWidth);
+    }
+
+    private static string BuildImageUrl(Guid itemId)
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "/Items/{0}/Images/Primary?maxHeight={1}&maxWidth={2}",
+            itemId,
+            MediaThumbnailHeight,
+            MediaThumbnailWidth);
     }
 
     private static string BuildDisplayName(BaseItem item)
     {
         if (item is Episode episode)
         {
-            var seriesName = episode.SeriesName;
-            if (string.IsNullOrWhiteSpace(seriesName))
-            {
-                seriesName = episode.Series?.Name;
-            }
-
-            if (episode.ParentIndexNumber.HasValue && episode.IndexNumber.HasValue)
-            {
-                var episodeLabel = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "S{0:D2}E{1:D2}",
-                    episode.ParentIndexNumber.Value,
-                    episode.IndexNumber.Value);
-
-                if (!string.IsNullOrWhiteSpace(episode.Name))
-                {
-                    episodeLabel += " - " + episode.Name;
-                }
-
-                if (!string.IsNullOrWhiteSpace(seriesName))
-                {
-                    return seriesName + " - " + episodeLabel;
-                }
-
-                return episodeLabel;
-            }
-
-            if (!string.IsNullOrWhiteSpace(seriesName))
-            {
-                return seriesName + " - " + episode.Name;
-            }
+            return BuildEpisodeDisplayName(episode);
         }
 
         return item.Name ?? "Unknown media";
+    }
+
+    private static string BuildEpisodeDisplayName(Episode episode)
+    {
+        if (episode.ParentIndexNumber.HasValue && episode.IndexNumber.HasValue)
+        {
+            var episodeLabel = string.Format(
+                CultureInfo.InvariantCulture,
+                "S{0:D2}E{1:D2}",
+                episode.ParentIndexNumber.Value,
+                episode.IndexNumber.Value);
+
+            if (!string.IsNullOrWhiteSpace(episode.Name))
+            {
+                episodeLabel += " - " + episode.Name;
+            }
+
+            return episodeLabel;
+        }
+
+        return episode.Name ?? "Unknown episode";
     }
 
     private static string FormatFriendlyDateTime(DateTime? value)
