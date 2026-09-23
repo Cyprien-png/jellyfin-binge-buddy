@@ -12,7 +12,7 @@ Use it to plan the next watch session: browse a library, open a movie or season,
 
 ## Requirements
 
-- Jellyfin **10.11.11** or later (plugin ABI `10.11.11.0`)
+- Jellyfin **12.0** or later (plugin ABI `12.0.0.0`)
 - Administrative access to configure groups
 - Jellyfin **web client** for overlays and detail cards
 
