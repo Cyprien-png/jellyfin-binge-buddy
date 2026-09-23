@@ -88,7 +88,10 @@ public class BingeBuddyScriptInjectorMiddleware
             if (bodyCloseIndex != -1)
             {
                 body = body.Insert(bodyCloseIndex, ScriptTag + Environment.NewLine);
-                _logger.LogDebug("Injected BingeBuddy script into index.html response for {Path}", path);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Injected BingeBuddy script into index.html response for {Path}", path);
+                }
             }
         }
 
