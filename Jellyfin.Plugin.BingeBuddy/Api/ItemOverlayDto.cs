@@ -19,6 +19,11 @@ public class ItemOverlayDto
     public bool IsSeason { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the overlay item is a TV series.
+    /// </summary>
+    public bool IsSeries { get; set; }
+
+    /// <summary>
     /// Gets or sets the authenticated user's watch progress.
     /// </summary>
     public WatchProgressDto CurrentUser { get; set; } = new();

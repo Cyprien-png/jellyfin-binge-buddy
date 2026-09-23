@@ -6,6 +6,8 @@
 
 **Binge Buddy** helps household and friend groups see what everyone has already started watching on your Jellyfin server. An admin creates **binge-watching groups**, picks which Jellyfin users belong to each group, and the web client shows buddy avatars on posters plus **progress cards** on item detail pages so you can compare where everyone left off.
 
+Use it to plan the next watch session—or use **Watch together** to record what buddies watched on someone else's device and let them sync that progress to their own account later.
+
 Use it to plan the next watch session: browse a library, open a movie or season, and see who has started what—and how far they are—without guessing.
 
 ## Requirements
@@ -67,9 +69,9 @@ Display rules:
 
 Poster overlays require the **web UI**. Mobile and TV apps do not load the injected client script.
 
-### Detail page cards (movies & seasons)
+### Detail page cards (movies, seasons & series)
 
-On **movie** and **season** detail pages, Binge Buddy injects a **Binge buddies** section with one card per group mate who has started the title (or any episode in the season).
+On **movie**, **season**, and **series** detail pages, Binge Buddy injects a **Binge buddies** section with one card per group mate who has started the title (or any episode in the season or show).
 
 Each card shows:
 
@@ -91,15 +93,52 @@ Cards appear at the **bottom** of the details section. Progress is based on that
 
 Cards appear at the **top** of the season view (above the episode list). Progress is based on each person’s **highest started episode** in that season—for example, if a buddy is on episode 7, the card shows **Episode 7** with that episode’s watch time and percentage.
 
+#### Series
+
+Cards appear on the **series** detail page. Each buddy card shows their furthest started episode across the show (season and episode index, watch time, and percentage).
+
+### Watch together
+
+**Watch together** lets a **host** mark which group buddies are watching on their device. Binge Buddy records what was watched on the host’s Jellyfin account; when those buddies sign in later on their own devices, they get a **validation dialog** to copy the progress they care about into their own watch history.
+
+#### Starting a session (host)
+
+1. In the **Jellyfin web client**, start playback on the host account.
+2. When prompted, open **Watch together** and select which group buddies are watching on this device.
+3. On pause or stop, Binge Buddy records movies and episodes watched on the host account.
+
+Only items watched for at least **10 seconds** (or already marked as played) are tracked for buddy sync.
+
+#### Catching up (buddy)
+
+The next time a buddy signs in to the web client, Binge Buddy shows a validation dialog for each host they watched with:
+
+- **Host intro** — profile photo, name, and a short message explaining they can confirm what they watched
+- **Media list** — items in **watch order** (oldest first)
+  - **Movies** appear as selectable cards (thumbnail, title, watch date, progress)
+  - **TV shows** are **grouped by series**: series logo over a backdrop header, with **expandable seasons** (only seasons that have episodes to validate). Episodes use the same card layout as movies.
+- Buddies check the media they want to keep, then click **Continue** to apply that progress to their Jellyfin account and clear the pending queue for that host.
+
+After validation, the web UI refreshes **poster overlays**, **Binge buddies** detail cards (including pages already open), and Jellyfin’s native progress bars where possible.
+
+#### Watch together rules
+
+- Requires the **web client** on both host and buddy sides.
+- Pending items that are no longer in the library (or inaccessible to the buddy) are removed automatically.
+- Watch dates in the validation dialog are formatted using the **Jellyfin server culture** (not necessarily the browser language).
+
 ## Features
 
 - Create and manage binge-watching groups from the plugin settings page
 - Pick members with checkboxes and profile avatars
 - Avatar stacks on **movie**, **episode**, **season**, and **show** posters in the web client
-- **Binge buddies** detail cards on **movie** and **season** pages
+- **Binge buddies** detail cards on **movie**, **season**, and **series** pages
 - Side-by-side **You / Them** progress with time watched, percentage, and Jellyfin **Finished** state
-- Season cards show the **highest started episode** and that episode’s progress
+- Season and series cards show the **highest started episode** and that episode’s progress
 - Progress based on each user’s Jellyfin watch state (retroactive)
+- **Watch together** — host records shared viewing; buddies validate and sync progress on next login
+- Validation UI with host profile, grouped series/seasons, and selective media approval
+- Post-validation UI refresh for overlays, detail cards, and library progress bars
 
 ## Configuration
 
@@ -126,6 +165,9 @@ After groups are configured:
 2. **Library browsing** — look at poster thumbnails for stacked buddy avatars (movies, episodes, seasons, shows).
 3. **Movie details** — scroll to **Binge buddies** for You vs Them progress on that film.
 4. **Season details** — **Binge buddies** appears at the top; each card shows the buddy’s furthest episode and progress.
+5. **Series details** — **Binge buddies** shows each buddy’s furthest episode across the show.
+6. **Watch together (host)** — when playback starts, choose buddies on this device; their pending sync is updated when you pause or stop.
+7. **Watch together (buddy)** — on login, confirm watched media in the validation dialog to update your own progress.
 
 If nothing appears for a title, no other group member has started it yet—or you may be the only one who has.
 

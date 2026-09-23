@@ -72,7 +72,8 @@ public class UserProfileService : IUserProfileService
         long playbackPositionTicks,
         int avatarSize = 88,
         int? episodeIndexNumber = null,
-        long episodeRunTimeTicks = 0)
+        long episodeRunTimeTicks = 0,
+        int? seasonIndexNumber = null)
     {
         var user = MapUser(userId, avatarSize);
         if (user is null)
@@ -90,6 +91,7 @@ public class UserProfileService : IUserProfileService
             Played = played,
             PlaybackPositionTicks = playbackPositionTicks,
             EpisodeIndexNumber = episodeIndexNumber,
+            SeasonIndexNumber = seasonIndexNumber,
             EpisodeRunTimeTicks = episodeRunTimeTicks
         };
     }

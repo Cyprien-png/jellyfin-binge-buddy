@@ -1,0 +1,95 @@
+.bb-user-select {
+    --bb-accent: #00a4dc;
+    --bb-accent-soft: rgba(0, 164, 220, 0.15);
+    --bb-border: rgba(255, 255, 255, 0.12);
+    --bb-border-strong: rgba(255, 255, 255, 0.22);
+    --bb-radius: 0.5rem;
+    --bb-text-muted: rgba(255, 255, 255, 0.65);
+}
+
+.bb-user-select.bb-users-list,
+.bb-user-select.checkboxListContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-bottom: 0 !important;
+}
+
+.bb-user-select .bb-user-row.checkboxContainer {
+    margin: 0 !important;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--bb-border);
+    border-radius: calc(var(--bb-radius) - 0.1rem);
+    background: rgba(0, 0, 0, 0.14);
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.bb-user-select .bb-user-row.checkboxContainer:hover {
+    background: rgba(0, 0, 0, 0.24);
+    border-color: var(--bb-border-strong);
+}
+
+.bb-user-select .bb-user-row.checkboxContainer.is-selected {
+    border-color: rgba(0, 164, 220, 0.55);
+    background: var(--bb-accent-soft);
+}
+
+.bb-user-select .bb-user-row .emby-checkbox-label {
+    display: flex;
+    align-items: center;
+    padding-left: 0;
+    gap: 0.65rem;
+    width: 100%;
+    margin: 0;
+    cursor: pointer;
+}
+
+.bb-user-select .bb-user-avatar-wrap {
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bb-accent-soft);
+    color: var(--bb-accent);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.bb-user-select .bb-user-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.bb-user-select .bb-user-row .emby-checkbox-label span.bb-user-name {
+    font-size: 0.98rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.bb-user-select .bb-user-select-empty {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    border: 1px dashed var(--bb-border-strong);
+    border-radius: var(--bb-radius);
+    color: var(--bb-text-muted);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.bb-user-select .bb-user-select-empty-title {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: inherit;
+}
+
+.bb-user-select .bb-user-select-empty p {
+    margin: 0;
+    line-height: 1.45;
+}

@@ -21,6 +21,11 @@ public class GroupWatcherDto : GroupUserDto
     public int? EpisodeIndexNumber { get; set; }
 
     /// <summary>
+    /// Gets or sets the season index for <see cref="EpisodeIndexNumber"/>, when applicable.
+    /// </summary>
+    public int? SeasonIndexNumber { get; set; }
+
+    /// <summary>
     /// Gets or sets the runtime of <see cref="EpisodeIndexNumber"/> in Jellyfin ticks.
     /// </summary>
     public long EpisodeRunTimeTicks { get; set; }
