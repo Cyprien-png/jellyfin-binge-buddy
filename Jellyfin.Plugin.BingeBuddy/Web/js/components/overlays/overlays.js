@@ -13,7 +13,7 @@
         return window.BingeBuddyWatchProgress || null;
     }
 
-    let CARD_SELECTOR = 'a.cardImageContainer.cardContent, div.listItemImage';
+    let CARD_SELECTOR = '.cardImageContainer.cardContent, .cardContent > .cardImageContainer, .listItemImage';
     let DETAIL_SECTION_SELECTOR = '.detailSection';
     let DETAIL_MOUNT_SELECTOR = '.detailPagePrimaryContent';
     let OVERLAY_CLASS = 'bb-watcher-stack';
@@ -665,6 +665,10 @@
             console.warn('[BingeBuddy] Failed to refresh detail buddies.', err);
             scheduleDetailBuddiesRetry(true);
         });
+    }
+
+    function isPosterMount(container) {
+        return !!container && !container.closest('.cardOverlayContainer');
     }
 
     function processContainer(container) {
