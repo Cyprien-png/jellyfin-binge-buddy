@@ -13,4 +13,5 @@ owner: "Cyprien-png"
 artifacts:
   - "Jellyfin.Plugin.BingeBuddy.dll"
 changelog: |-
+  - Prepare for release v1.0.1 @[github-actions[bot]](https://github.com/apps/github-actions) (#12)
   - fix: show buddy badges on Jellyfin 12 library posters @Cyprien-png (#11)
