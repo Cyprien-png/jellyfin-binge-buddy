@@ -648,6 +648,10 @@
             });
 
             document.querySelectorAll(CARD_SELECTOR).forEach(function (container) {
+                if (!isPosterMount(container)) {
+                    return;
+                }
+
                 let itemId = extractItemId(container);
                 if (!itemId) {
                     return;
@@ -664,7 +668,7 @@
     }
 
     function processContainer(container) {
-        if (!container || container.dataset.bbWatcherProcessed === 'true') {
+        if (!isPosterMount(container)) {
             return;
         }
 
@@ -673,14 +677,25 @@
             return;
         }
 
-        container.dataset.bbWatcherProcessed = 'true';
-
-        let cached = overlayCache.get(normalizeGuid(itemId));
-        if (cached) {
-            renderOverlay(getMountPoint(container), cached.watchers);
+        let mount = getMountPoint(container);
+        if (mount.querySelector('.' + OVERLAY_CLASS)) {
             return;
         }
 
+        let cached = overlayCache.get(normalizeGuid(itemId));
+        if (cached) {
+            if (cached.watchers && cached.watchers.length) {
+                renderOverlay(mount, cached.watchers);
+            }
+
+            return;
+        }
+
+        if (container.dataset.bbWatcherProcessed === 'true') {
+            return;
+        }
+
+        container.dataset.bbWatcherProcessed = 'true';
         queueFetch(itemId);
     }
 
