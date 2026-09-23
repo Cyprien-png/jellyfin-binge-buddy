@@ -51,7 +51,10 @@ public partial class WebScriptInjector
                 if (!string.Equals(normalizedHtml, html, StringComparison.Ordinal))
                 {
                     File.WriteAllText(indexPath, normalizedHtml);
-                    _logger.LogInformation("Updated BingeBuddy client script tag in {IndexPath}", indexPath);
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        _logger.LogInformation("Updated BingeBuddy client script tag in {IndexPath}", indexPath);
+                    }
                 }
 
                 return;
@@ -59,7 +62,10 @@ public partial class WebScriptInjector
 
             var updatedHtml = html.Replace("</body>", ScriptTag + Environment.NewLine + "</body>", StringComparison.Ordinal);
             File.WriteAllText(indexPath, updatedHtml);
-            _logger.LogInformation("Injected BingeBuddy client script into {IndexPath}", indexPath);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Injected BingeBuddy client script into {IndexPath}", indexPath);
+            }
         }
         catch (Exception ex)
         {
@@ -89,7 +95,10 @@ public partial class WebScriptInjector
             var lines = html.Split('\n');
             var filtered = lines.Where(line => !line.Contains(ScriptMarker, StringComparison.Ordinal)).ToArray();
             File.WriteAllText(indexPath, string.Join('\n', filtered));
-            _logger.LogInformation("Removed BingeBuddy client script from {IndexPath}", indexPath);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Removed BingeBuddy client script from {IndexPath}", indexPath);
+            }
         }
         catch (Exception ex)
         {

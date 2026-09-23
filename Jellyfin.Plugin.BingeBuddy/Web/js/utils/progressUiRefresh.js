@@ -42,12 +42,16 @@
         });
     }
 
+    function findImageContainer(card) {
+        return card.querySelector('.cardContent > .cardImageContainer, .cardImageContainer.cardContent, .listItemImage');
+    }
+
     function ensureIndicators(card) {
         let indicatorsElem = card.querySelector('.indicators');
         if (!indicatorsElem) {
             indicatorsElem = document.createElement('div');
             indicatorsElem.className = 'indicators';
-            let imageContainer = card.querySelector('.cardImageContainer') || card.querySelector('.listItemImage');
+            let imageContainer = findImageContainer(card);
             if (imageContainer) {
                 imageContainer.appendChild(indicatorsElem);
             } else {
@@ -83,7 +87,7 @@
                 progressBar.className = progressSelector.slice(1);
 
                 let footer = card.querySelector('.innerCardFooter');
-                let imageContainer = card.querySelector('.cardImageContainer') || card.querySelector('.listItemImage');
+                let imageContainer = findImageContainer(card);
 
                 if (footer) {
                     footer.appendChild(progressBar);

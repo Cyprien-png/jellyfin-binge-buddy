@@ -13,7 +13,7 @@
         return window.BingeBuddyWatchProgress || null;
     }
 
-    let CARD_SELECTOR = 'a.cardImageContainer.cardContent, div.listItemImage';
+    let CARD_SELECTOR = '.cardImageContainer.cardContent, .cardContent > .cardImageContainer, .listItemImage';
     let DETAIL_SECTION_SELECTOR = '.detailSection';
     let DETAIL_MOUNT_SELECTOR = '.detailPagePrimaryContent';
     let OVERLAY_CLASS = 'bb-watcher-stack';
@@ -592,6 +592,10 @@
             applyOverlayResponse(response);
 
             document.querySelectorAll(CARD_SELECTOR).forEach(function (container) {
+                if (!isPosterMount(container)) {
+                    return;
+                }
+
                 let itemId = extractItemId(container);
                 if (!itemId) {
                     return;
@@ -663,8 +667,12 @@
         });
     }
 
+    function isPosterMount(container) {
+        return !!container && !container.closest('.cardOverlayContainer');
+    }
+
     function processContainer(container) {
-        if (!container || container.dataset.bbWatcherProcessed === 'true') {
+        if (!isPosterMount(container)) {
             return;
         }
 
@@ -673,14 +681,25 @@
             return;
         }
 
-        container.dataset.bbWatcherProcessed = 'true';
-
-        let cached = overlayCache.get(normalizeGuid(itemId));
-        if (cached) {
-            renderOverlay(getMountPoint(container), cached.watchers);
+        let mount = getMountPoint(container);
+        if (mount.querySelector('.' + OVERLAY_CLASS)) {
             return;
         }
 
+        let cached = overlayCache.get(normalizeGuid(itemId));
+        if (cached) {
+            if (cached.watchers && cached.watchers.length) {
+                renderOverlay(mount, cached.watchers);
+            }
+
+            return;
+        }
+
+        if (container.dataset.bbWatcherProcessed === 'true') {
+            return;
+        }
+
+        container.dataset.bbWatcherProcessed = 'true';
         queueFetch(itemId);
     }
 
