@@ -97,7 +97,7 @@
 
         let watched = formatWatchedDuration(playbackPositionTicks);
         let percent = getProgressPercent(false, playbackPositionTicks, runTimeTicks);
-        return watched + ' watched (' + percent + '%)';
+        return watched + ' (' + percent + '%)';
     }
 
     function ensureStyles() {

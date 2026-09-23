@@ -80,7 +80,7 @@ Each card shows:
 
 For each row (**You** / **Them**), the card shows:
 
-- A status line, for example `45m 3s watched (86%)`, `1h 45m 13s watched (86%)`, or **`Finished`**
+- A status line, for example `45m 3s (86%)`, `1h 45m 13s (86%)`, or **`Finished`**
 - A rounded progress bar (**gray** for you, **coral** for them)
 
 **Finished** follows Jellyfin’s own played state (someone can finish during credits without being at 100% of the runtime bar). The bar is shown **full** when Jellyfin marks the item as played.
