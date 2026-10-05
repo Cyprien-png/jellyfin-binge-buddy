@@ -178,7 +178,7 @@ If overlays or cards do not show up after an update, try a hard refresh (**Ctrl 
 
 ## Build
 
-1. Install the [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0).
+1. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 2. From the repository root, build and publish:
    ```bash
    dotnet publish Jellyfin.Plugin.BingeBuddy/Jellyfin.Plugin.BingeBuddy.csproj --configuration Release --output bin
