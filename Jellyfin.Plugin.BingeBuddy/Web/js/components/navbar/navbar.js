@@ -64,12 +64,28 @@
             || headerRight.firstElementChild;
     }
 
-    function createNavbarButton() {
+    function findModernToolbar() {
+        return document.querySelector('.MuiAppBar-root > .MuiToolbar-root, header.MuiAppBar-root .MuiToolbar-root');
+    }
+
+    function findModernActions(toolbar) {
+        let boxes = toolbar.querySelectorAll(':scope > .MuiBox-root');
+        if (boxes.length >= 2) {
+            return boxes[boxes.length - 2];
+        }
+
+        return boxes.length ? boxes[0] : null;
+    }
+
+    function createNavbarButton(modern) {
         let button = document.createElement('button');
         button.type = 'button';
-        button.setAttribute('is', 'paper-icon-button-light');
-        button.className = 'headerButton headerButtonRight paper-icon-button-light ' + NAVBAR_BUTTON_CLASS;
+        button.className = NAVBAR_BUTTON_CLASS + (modern ? ' bb-navbar-button-appbar' : ' headerButton headerButtonRight paper-icon-button-light');
+        if (!modern) {
+            button.setAttribute('is', 'paper-icon-button-light');
+        }
         button.title = 'Binge Buddy: Watch together';
+        button.setAttribute('aria-label', 'Binge Buddy: Watch together');
         button.innerHTML = BUDDY_ICON_SVG;
         button.addEventListener('click', function (event) {
             event.preventDefault();
@@ -85,12 +101,23 @@
     }
 
     function ensureNavbarButton() {
+        let toolbar = findModernToolbar();
+        if (toolbar) {
+            let actions = findModernActions(toolbar);
+            if (!actions || actions.querySelector('.' + NAVBAR_BUTTON_CLASS)) {
+                return;
+            }
+
+            actions.insertBefore(createNavbarButton(true), actions.firstElementChild);
+            return;
+        }
+
         let skinHeader = document.querySelector('.skinHeader');
         if (!skinHeader || skinHeader.querySelector('.' + NAVBAR_BUTTON_CLASS)) {
             return;
         }
 
-        let button = createNavbarButton();
+        let button = createNavbarButton(false);
         let headerRight = skinHeader.querySelector('.headerRight');
         let insertBefore = findHeaderRightInsertPoint(skinHeader);
 
@@ -117,6 +144,15 @@
         }
 
         document.addEventListener('viewshow', ensureNavbarButton);
+
+        let observer = new MutationObserver(function () {
+            ensureNavbarButton();
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
     }
 
     loadStylesheet();
