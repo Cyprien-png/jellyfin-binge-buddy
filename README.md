@@ -2,6 +2,9 @@
 
 ![Binge Buddy](https://raw.githubusercontent.com/cyprien-png/jellyfin-binge-buddy/master/thumbnail.png)
 
+> [!WARNING]
+> After updating to 1.0.1, the plugin can stay stuck on **Restart** even after a server reboot. Remove the previous version folder (usually under `/var/lib/jellyfin/plugins/`), then start Jellyfin again. Sorry about the inconvenience. I'm looking into it, but for now I believe it is related to a plugin-manager issue in Jellyfin 12.x.
+
 ## About
 
 **Binge Buddy** helps household and friend groups see what everyone has already started watching on your Jellyfin server. An admin creates **binge-watching groups**, picks which Jellyfin users belong to each group, and the web client shows buddy avatars on posters plus **progress cards** on item detail pages so you can compare where everyone left off.
